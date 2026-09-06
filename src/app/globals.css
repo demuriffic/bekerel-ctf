@@ -1,26 +1,74 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #080d0b;
+  --foreground: #e6f7ef;
+  --card: #0d1613;
+  --card-foreground: #e6f7ef;
+  --border: #1a3026;
+  --input: #13241d;
+  --primary: #00ff41;
+  --primary-foreground: #041409;
+  --accent: #00ff41;
+  --accent-foreground: #041409;
+  --muted: #13241d;
+  --muted-foreground: #7ba893;
+  --destructive: #ff3366;
+  --destructive-foreground: #ffffff;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 255, 65, 0.08), transparent 70%),
+    linear-gradient(rgba(0, 255, 65, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+}
+
+/* Custom hacker glow & utility effects */
+.glow-green {
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.25);
+}
+
+.glow-green-sm {
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.2);
+}
+
+.glow-green-text {
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.6);
+}
+
+.terminal-border {
+  border: 1px solid rgba(0, 255, 65, 0.2);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.terminal-border:hover {
+  border-color: rgba(0, 255, 65, 0.4);
+  box-shadow: 0 0 12px rgba(0, 255, 65, 0.15);
+}
+
+.font-mono-code {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Scanline animation */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(1000%); }
+}
+
+.scanline::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 2;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
 }

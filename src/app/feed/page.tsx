@@ -103,6 +103,7 @@ export default function FeedPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
                       href={`/profile/${item.username}`}
+                      prefetch={false}
                       className="font-bold font-mono-code text-white hover:text-[#00ff41] transition-colors"
                     >
                       {item.username}
@@ -110,6 +111,7 @@ export default function FeedPage() {
                     <span className="text-xs text-gray-500 font-mono-code">solved</span>
                     <Link
                       href={`/challenges/${item.challengeId}`}
+                      prefetch={false}
                       className="font-bold font-mono-code text-[#00ff41] hover:underline"
                     >
                       {item.challengeTitle}

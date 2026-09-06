@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Terminal, Shield, ArrowRight, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,6 +31,7 @@ export default function LoginPage() {
         throw new Error(data.error || 'Failed to authenticate');
       }
 
+      await refreshUser();
       router.push('/challenges');
       router.refresh();
     } catch (err: any) {

@@ -2,17 +2,13 @@ import Link from 'next/link';
 import { db, users, challenges, categories, solves } from '@/db';
 import { eq, and, sql } from 'drizzle-orm';
 import { initDb } from '@/db/migrate';
-import { getCtfStatus } from '@/lib/ctf';
 import { CTF_CONFIG } from '@/lib/config';
 import { Terminal, Shield, Trophy, Activity, ArrowRight, Flag, Flame, Target, Cpu } from 'lucide-react';
-import HeroStatusBadge from '@/components/shared/HeroStatusBadge';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 60;
 
 export default async function HomePage() {
   await initDb();
-  const ctfStatus = await getCtfStatus();
 
   // Aggregate count queries for high performance and minimal memory usage
   const [playerMetric] = await db
@@ -41,11 +37,6 @@ export default async function HomePage() {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#00ff41]/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-5xl mx-auto w-full relative z-10 space-y-12">
-        {/* Status Badge */}
-        <div className="flex justify-center">
-          <HeroStatusBadge initialStatus={ctfStatus} />
-        </div>
-
         {/* Hero title */}
         <div className="text-center space-y-4">
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white font-mono-code">

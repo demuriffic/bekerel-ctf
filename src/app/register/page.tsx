@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Terminal, ArrowRight, AlertCircle, ShieldCheck } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +32,7 @@ export default function RegisterPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
+      await refreshUser();
       router.push('/challenges');
       router.refresh();
     } catch (err: any) {

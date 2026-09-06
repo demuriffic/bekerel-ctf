@@ -184,6 +184,7 @@ export default function ScoreboardPage() {
                       <td className="py-3.5 px-4">
                         <Link
                           href={`/profile/${entry.username}`}
+                          prefetch={false}
                           className="font-semibold text-white hover:text-[#00ff41] transition-colors flex items-center gap-2"
                         >
                           <User className="w-3.5 h-3.5 text-gray-500" />

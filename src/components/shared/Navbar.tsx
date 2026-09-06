@@ -1,39 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Terminal, Shield, Trophy, Activity, User, LogOut, ShieldAlert, LineChart } from 'lucide-react';
 
-interface CurrentUser {
-  id: string;
-  username: string;
-  email: string;
-  role: 'player' | 'admin';
-}
+import { useAuth } from '@/context/AuthContext';
 
 export default function Navbar({ ctfName }: { ctfName: string }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then((res) => res.json())
-      .then((data) => {
-        setUser(data.user);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [pathname]);
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setUser(null);
-    router.push('/login');
-    router.refresh();
-  };
+  const { user, loading, logout: handleLogout } = useAuth();
 
   const navLinks = [
     { href: '/challenges', label: 'Challenges', icon: Shield },

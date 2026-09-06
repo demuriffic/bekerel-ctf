@@ -195,6 +195,7 @@ export default function ChallengesPage() {
               <Link
                 key={ch.id}
                 href={`/challenges/${ch.id}`}
+                prefetch={false}
                 className={`group relative p-5 rounded-lg border transition-all flex flex-col justify-between overflow-hidden ${
                   ch.isSolved
                     ? 'border-[#00ff41]/50 bg-[#00ff41]/5 shadow-[0_0_15px_rgba(0,255,65,0.1)]'

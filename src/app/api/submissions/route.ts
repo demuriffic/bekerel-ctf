@@ -72,6 +72,12 @@ export async function POST(req: Request) {
     // Check CTF status
     const ctfStatus = await getCtfStatus();
     if (session.role !== 'admin') {
+      if (ctfStatus.isPaused) {
+        return NextResponse.json(
+          { error: 'The CTF competition is currently PAUSED by administrators. Submissions are temporarily suspended.' },
+          { status: 403 }
+        );
+      }
       if (!ctfStatus.hasStarted) {
         return NextResponse.json({ error: 'The CTF competition has not started yet.' }, { status: 403 });
       }

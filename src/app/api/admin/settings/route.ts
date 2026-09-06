@@ -18,6 +18,7 @@ export async function GET() {
       settings: {
         startTime: settings?.startTime ? settings.startTime.toISOString() : null,
         endTime: settings?.endTime ? settings.endTime.toISOString() : null,
+        isPaused: Boolean(settings?.isPaused),
       },
     });
   } catch (error: any) {
@@ -35,7 +36,7 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { startTime, endTime } = body;
+    const { startTime, endTime, isPaused } = body;
 
     const startDate = startTime ? new Date(startTime) : null;
     const endDate = endTime ? new Date(endTime) : null;
@@ -55,8 +56,9 @@ export async function PUT(req: Request) {
     const [updated] = await db
       .update(ctfSettings)
       .set({
-        startTime: startDate,
-        endTime: endDate,
+        ...(startTime !== undefined && { startTime: startDate }),
+        ...(endTime !== undefined && { endTime: endDate }),
+        ...(isPaused !== undefined && { isPaused: Boolean(isPaused) }),
       })
       .where(eq(ctfSettings.id, 1))
       .returning();
@@ -66,6 +68,7 @@ export async function PUT(req: Request) {
       settings: {
         startTime: updated?.startTime ? updated.startTime.toISOString() : null,
         endTime: updated?.endTime ? updated.endTime.toISOString() : null,
+        isPaused: Boolean(updated?.isPaused),
       },
     });
   } catch (error: any) {

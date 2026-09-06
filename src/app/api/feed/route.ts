@@ -7,8 +7,15 @@ export async function GET() {
   try {
     await initDb();
 
-    // Fetch all solves to determine first bloods
-    const allSolvesAsc = await db.select().from(solves).orderBy(asc(solves.solvedAt));
+    // Fetch solves, users, challenges, and categories in parallel
+    const [allSolvesAsc, recentSolves, allUsers, allChallenges, allCategories] = await Promise.all([
+      db.select({ id: solves.id, challengeId: solves.challengeId }).from(solves).orderBy(asc(solves.solvedAt)),
+      db.select().from(solves).orderBy(desc(solves.solvedAt)).limit(50),
+      db.select({ id: users.id, username: users.username }).from(users),
+      db.select({ id: challenges.id, title: challenges.title, categoryId: challenges.categoryId }).from(challenges),
+      db.select().from(categories),
+    ]);
+
     const firstBloods = new Set<string>();
     const seenChallenges = new Set<string>();
 
@@ -18,13 +25,6 @@ export async function GET() {
         seenChallenges.add(s.challengeId);
       }
     }
-
-    // Fetch recent solves
-    const recentSolves = await db.select().from(solves).orderBy(desc(solves.solvedAt)).limit(50);
-
-    const allUsers = await db.select().from(users);
-    const allChallenges = await db.select().from(challenges);
-    const allCategories = await db.select().from(categories);
 
     const userMap = new Map(allUsers.map((u) => [u.id, u.username]));
     const challengeMap = new Map(allChallenges.map((c) => [c.id, c]));
@@ -47,7 +47,14 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ feed });
+    return NextResponse.json(
+      { feed },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3, stale-while-revalidate=10',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Feed error:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db, challenges, categories, solves } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { getSession } from '@/lib/auth';
+import { getCtfStatus } from '@/lib/ctf';
 import { calculateDynamicPoints } from '@/lib/scoring';
 import { initDb } from '@/db/migrate';
 
@@ -14,7 +15,11 @@ export async function GET(
     const { id } = await params;
     const session = await getSession();
 
-    const [challenge] = await db.select().from(challenges).where(eq(challenges.id, id)).limit(1);
+    const [challenge, ctfStatus] = await Promise.all([
+      db.select().from(challenges).where(eq(challenges.id, id)).limit(1).then((r) => r[0]),
+      getCtfStatus(),
+    ]);
+
     if (!challenge) {
       return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
     }
@@ -23,9 +28,19 @@ export async function GET(
       return NextResponse.json({ error: 'Challenge not available' }, { status: 404 });
     }
 
-    const [category] = await db.select().from(categories).where(eq(categories.id, challenge.categoryId)).limit(1);
+    const [category, challengeSolves, userSolve] = await Promise.all([
+      db.select().from(categories).where(eq(categories.id, challenge.categoryId)).limit(1).then((r) => r[0]),
+      db.select().from(solves).where(eq(solves.challengeId, challenge.id)),
+      session
+        ? db
+            .select()
+            .from(solves)
+            .where(and(eq(solves.userId, session.id), eq(solves.challengeId, challenge.id)))
+            .limit(1)
+            .then((r) => r[0])
+        : Promise.resolve(null),
+    ]);
 
-    const challengeSolves = await db.select().from(solves).where(eq(solves.challengeId, challenge.id));
     const solveCount = challengeSolves.length;
     const currentPoints = calculateDynamicPoints(
       challenge.maxPoints,
@@ -34,35 +49,33 @@ export async function GET(
       solveCount
     );
 
-    let isSolved = false;
-    if (session) {
-      const [userSolve] = await db
-        .select()
-        .from(solves)
-        .where(and(eq(solves.userId, session.id), eq(solves.challengeId, challenge.id)))
-        .limit(1);
-      isSolved = !!userSolve;
-    }
-
-    return NextResponse.json({
-      challenge: {
-        id: challenge.id,
-        title: challenge.title,
-        description: challenge.description,
-        categoryId: challenge.categoryId,
-        categoryName: category?.name || 'Unknown',
-        categoryColor: category?.color || '#00ff41',
-        currentPoints,
-        maxPoints: challenge.maxPoints,
-        minPoints: challenge.minPoints,
-        decayFactor: challenge.decayFactor,
-        solveCount,
-        status: challenge.status,
-        attachmentUrl: challenge.attachmentUrl,
-        isSolved,
-        // Flag is NEVER returned!
+    return NextResponse.json(
+      {
+        isPaused: ctfStatus.isPaused,
+        challenge: {
+          id: challenge.id,
+          title: challenge.title,
+          description: challenge.description,
+          categoryId: challenge.categoryId,
+          categoryName: category?.name || 'Unknown',
+          categoryColor: category?.color || '#00ff41',
+          currentPoints,
+          maxPoints: challenge.maxPoints,
+          minPoints: challenge.minPoints,
+          decayFactor: challenge.decayFactor,
+          solveCount,
+          status: challenge.status,
+          attachmentUrl: challenge.attachmentUrl,
+          isSolved: Boolean(userSolve),
+          // Flag is NEVER returned!
+        },
       },
-    });
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3, stale-while-revalidate=15',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Error fetching challenge detail:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });

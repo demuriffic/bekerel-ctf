@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, uuid, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, uuid, uniqueIndex, index } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -18,20 +18,26 @@ export const categories = pgTable('categories', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-export const challenges = pgTable('challenges', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  title: text('title').notNull(),
-  description: text('description').notNull(),
-  flag: text('flag').notNull(),
-  categoryId: uuid('category_id').notNull().references(() => categories.id, { onDelete: 'cascade' }),
-  maxPoints: integer('max_points').notNull().default(500),
-  minPoints: integer('min_points').notNull().default(100),
-  decayFactor: integer('decay_factor').notNull().default(50),
-  status: text('status').notNull().default('draft'), // 'draft' | 'published'
-  attachmentUrl: text('attachment_url'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+export const challenges = pgTable(
+  'challenges',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    flag: text('flag').notNull(),
+    categoryId: uuid('category_id').notNull().references(() => categories.id, { onDelete: 'cascade' }),
+    maxPoints: integer('max_points').notNull().default(500),
+    minPoints: integer('min_points').notNull().default(100),
+    decayFactor: integer('decay_factor').notNull().default(50),
+    status: text('status').notNull().default('draft'), // 'draft' | 'published'
+    attachmentUrl: text('attachment_url'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('challenges_cat_idx').on(table.categoryId),
+  ]
+);
 
 export const solves = pgTable(
   'solves',
@@ -44,22 +50,31 @@ export const solves = pgTable(
   },
   (table) => [
     uniqueIndex('user_challenge_idx').on(table.userId, table.challengeId),
+    index('solves_challenge_idx').on(table.challengeId),
+    index('solves_user_idx').on(table.userId),
   ]
 );
 
-export const submissions = pgTable('submissions', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  challengeId: uuid('challenge_id').notNull().references(() => challenges.id, { onDelete: 'cascade' }),
-  submittedFlag: text('submitted_flag').notNull(),
-  correct: boolean('correct').notNull(),
-  submittedAt: timestamp('submitted_at').notNull().defaultNow(),
-});
+export const submissions = pgTable(
+  'submissions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    challengeId: uuid('challenge_id').notNull().references(() => challenges.id, { onDelete: 'cascade' }),
+    submittedFlag: text('submitted_flag').notNull(),
+    correct: boolean('correct').notNull(),
+    submittedAt: timestamp('submitted_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('submissions_user_chal_idx').on(table.userId, table.challengeId, table.submittedAt),
+  ]
+);
 
 export const ctfSettings = pgTable('ctf_settings', {
   id: integer('id').primaryKey().default(1),
   startTime: timestamp('start_time'),
   endTime: timestamp('end_time'),
+  isPaused: boolean('is_paused').notNull().default(false),
 });
 
 export type User = typeof users.$inferSelect;

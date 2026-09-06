@@ -7,12 +7,14 @@ export async function GET() {
   try {
     await initDb();
 
-    // Fetch non-banned competitors (players only, excluding admins)
-    const allUsers = await db
-      .select()
-      .from(users)
-      .where(and(eq(users.banned, false), eq(users.role, 'player')));
-    const allSolves = await db.select().from(solves).orderBy(asc(solves.solvedAt));
+    // Fetch non-banned competitors and solves in parallel
+    const [allUsers, allSolves] = await Promise.all([
+      db
+        .select()
+        .from(users)
+        .where(and(eq(users.banned, false), eq(users.role, 'player'))),
+      db.select().from(solves).orderBy(asc(solves.solvedAt)),
+    ]);
 
     // Calculate total scores to find top 10
     const userScores = new Map<string, number>();
@@ -28,34 +30,42 @@ export async function GET() {
     const topUserIds = new Set(topUsers.map((u) => u.id));
     const topUsernames = topUsers.map((u) => u.username);
 
-    // Filter solves to top users
-    const relevantSolves = allSolves.filter((s) => topUserIds.has(s.userId));
-
-    // Cumulative progression
-    const runningScores: Record<string, number> = {};
+    // Build timeline data points
+    const runningScores = new Map<string, number>();
     for (const u of topUsers) {
-      runningScores[u.username] = 0;
+      runningScores.set(u.username, 0);
     }
 
     const chartData: any[] = [];
-    const userMap = new Map(allUsers.map((u) => [u.id, u.username]));
+
+    // Filter solves to top 10
+    const relevantSolves = allSolves.filter((s) => topUserIds.has(s.userId));
+    const userMap = new Map(topUsers.map((u) => [u.id, u.username]));
 
     for (const s of relevantSolves) {
       const username = userMap.get(s.userId);
-      if (username) {
-        runningScores[username] = (runningScores[username] || 0) + s.pointsAwarded;
-        chartData.push({
-          time: new Date(s.solvedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          timestamp: new Date(s.solvedAt).getTime(),
-          ...runningScores,
-        });
-      }
+      if (!username) continue;
+
+      const current = runningScores.get(username) || 0;
+      runningScores.set(username, current + s.pointsAwarded);
+
+      chartData.push({
+        time: new Date(s.solvedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        ...Object.fromEntries(runningScores.entries()),
+      });
     }
 
-    return NextResponse.json({
-      players: topUsernames,
-      chartData,
-    });
+    return NextResponse.json(
+      {
+        players: topUsernames,
+        chartData,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3, stale-while-revalidate=15',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Scoreboard chart error:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });

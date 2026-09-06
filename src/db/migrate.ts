@@ -44,6 +44,9 @@ CREATE TABLE IF NOT EXISTS solves (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS user_challenge_idx ON solves(user_id, challenge_id);
+CREATE INDEX IF NOT EXISTS solves_challenge_idx ON solves(challenge_id);
+CREATE INDEX IF NOT EXISTS solves_user_idx ON solves(user_id);
+CREATE INDEX IF NOT EXISTS challenges_cat_idx ON challenges(category_id);
 
 CREATE TABLE IF NOT EXISTS submissions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -54,11 +57,16 @@ CREATE TABLE IF NOT EXISTS submissions (
   submitted_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS submissions_user_chal_idx ON submissions(user_id, challenge_id, submitted_at);
+
 CREATE TABLE IF NOT EXISTS ctf_settings (
   id INTEGER PRIMARY KEY DEFAULT 1,
   start_time TIMESTAMP,
-  end_time TIMESTAMP
+  end_time TIMESTAMP,
+  is_paused BOOLEAN NOT NULL DEFAULT false
 );
+
+ALTER TABLE ctf_settings ADD COLUMN IF NOT EXISTS is_paused BOOLEAN NOT NULL DEFAULT false;
 `;
 
 let initialized = false;

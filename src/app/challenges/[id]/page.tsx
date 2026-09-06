@@ -43,6 +43,7 @@ export default function ChallengeDetailPage({
   const router = useRouter();
 
   const [challenge, setChallenge] = useState<ChallengeDetail | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
   const [loading, setLoading] = useState(true);
   const [flag, setFlag] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -60,6 +61,7 @@ export default function ChallengeDetailPage({
       })
       .then((data) => {
         setChallenge(data.challenge);
+        setIsPaused(Boolean(data.isPaused));
         setLoading(false);
       })
       .catch((err) => {
@@ -228,6 +230,15 @@ export default function ChallengeDetailPage({
 
         {/* Flag Submission Area */}
         <div className="border-t border-[#1a3026] pt-6 space-y-4">
+          {isPaused && (
+            <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/40 flex items-center gap-3 text-sm text-amber-400 font-mono-code shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+              <AlertCircle className="w-5 h-5 shrink-0 text-amber-400 animate-pulse" />
+              <div>
+                <span className="font-bold">COMPETITION PAUSED:</span> Flag submissions are currently disabled by administrators.
+              </div>
+            </div>
+          )}
+
           {challenge.isSolved ? (
             <div className="p-4 rounded-lg bg-[#00ff41]/10 border border-[#00ff41]/40 flex items-center gap-3 text-sm text-[#00ff41] font-mono-code shadow-[0_0_15px_rgba(0,255,65,0.15)]">
               <CheckCircle2 className="w-5 h-5 text-[#00ff41] shrink-0" />
@@ -250,18 +261,19 @@ export default function ChallengeDetailPage({
                 <input
                   type="text"
                   required
+                  disabled={isPaused}
                   value={flag}
                   onChange={(e) => setFlag(e.target.value)}
-                  placeholder="flag{...}"
-                  className="flex-1 px-4 py-2.5 rounded bg-[#13241d] border border-[#1a3026] text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#00ff41] focus:ring-1 focus:ring-[#00ff41] font-mono-code transition-all"
+                  placeholder={isPaused ? "Submissions currently locked..." : "flag{...}"}
+                  className="flex-1 px-4 py-2.5 rounded bg-[#13241d] border border-[#1a3026] text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#00ff41] focus:ring-1 focus:ring-[#00ff41] font-mono-code transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   type="submit"
-                  disabled={submitting || !flag.trim()}
-                  className="px-6 py-2.5 rounded bg-[#00ff41] hover:bg-[#00e63a] text-[#041409] font-bold text-sm font-mono-code uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(0,255,65,0.2)] hover:shadow-[0_0_20px_rgba(0,255,65,0.35)] disabled:opacity-50"
+                  disabled={submitting || !flag.trim() || isPaused}
+                  className="px-6 py-2.5 rounded bg-[#00ff41] hover:bg-[#00e63a] text-[#041409] font-bold text-sm font-mono-code uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(0,255,65,0.2)] hover:shadow-[0_0_20px_rgba(0,255,65,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="w-4 h-4" />
-                  <span>{submitting ? 'VALIDATING...' : 'SUBMIT'}</span>
+                  <span>{isPaused ? 'PAUSED' : submitting ? 'VALIDATING...' : 'SUBMIT'}</span>
                 </button>
               </div>
             </form>

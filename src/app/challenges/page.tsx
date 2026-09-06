@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Shield, CheckCircle2, Flame, ExternalLink, Filter, Target } from 'lucide-react';
+import { Shield, CheckCircle2, Flame, ExternalLink, Filter, Target, AlertTriangle } from 'lucide-react';
 
 interface Challenge {
   id: string;
@@ -11,6 +11,7 @@ interface Challenge {
   currentPoints: number;
   maxPoints: number;
   minPoints: number;
+  decayFactor: number;
   solveCount: number;
   status: string;
   isSolved: boolean;
@@ -27,6 +28,7 @@ export default function ChallengesPage() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isPaused, setIsPaused] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,6 +37,7 @@ export default function ChallengesPage() {
       .then((data) => {
         setChallenges(data.challenges || []);
         setCategories(data.categories || []);
+        setIsPaused(Boolean(data.isPaused));
         setLoading(false);
       })
       .catch((err) => {
@@ -75,6 +78,16 @@ export default function ChallengesPage() {
           </div>
         </div>
       </div>
+
+      {/* Paused Banner */}
+      {isPaused && (
+        <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/40 flex items-center gap-3 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-400 animate-pulse" />
+          <div className="text-sm font-mono-code">
+            <span className="font-bold tracking-wider">COMPETITION PAUSED:</span> Flag submissions are temporarily locked by administrators. You can still inspect challenge details and materials.
+          </div>
+        </div>
+      )}
 
       {/* Category Filter Tabs */}
       <div className="flex flex-wrap gap-2 items-center">

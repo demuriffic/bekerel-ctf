@@ -7,12 +7,14 @@ export async function GET() {
   try {
     await initDb();
 
-    // Get non-banned competitors (players only, excluding admins)
-    const allUsers = await db
-      .select()
-      .from(users)
-      .where(and(eq(users.banned, false), eq(users.role, 'player')));
-    const allSolves = await db.select().from(solves);
+    // Get non-banned competitors and all solves in parallel
+    const [allUsers, allSolves] = await Promise.all([
+      db
+        .select()
+        .from(users)
+        .where(and(eq(users.banned, false), eq(users.role, 'player'))),
+      db.select().from(solves),
+    ]);
 
     // Group solves by user
     const userStats = new Map<
@@ -67,7 +69,14 @@ export async function GET() {
         lastSolveAt: entry.lastSolveAt ? entry.lastSolveAt.toISOString() : null,
       }));
 
-    return NextResponse.json({ leaderboard });
+    return NextResponse.json(
+      { leaderboard },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3, stale-while-revalidate=15',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Scoreboard error:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });

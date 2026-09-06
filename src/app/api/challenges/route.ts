@@ -3,6 +3,7 @@ import { db, challenges, categories, solves } from '@/db';
 import { eq, asc } from 'drizzle-orm';
 import { getSession } from '@/lib/auth';
 import { calculateDynamicPoints } from '@/lib/scoring';
+import { getCtfStatus } from '@/lib/ctf';
 import { initDb } from '@/db/migrate';
 
 export async function GET() {
@@ -10,17 +11,17 @@ export async function GET() {
     await initDb();
     const session = await getSession();
 
-    // Fetch categories
-    const allCategories = await db.select().from(categories).orderBy(asc(categories.order));
+    // Fetch CTF status, categories, challenges, and solves in parallel
+    const [ctfStatus, allCategories, allChallenges, allSolves] = await Promise.all([
+      getCtfStatus(),
+      db.select().from(categories).orderBy(asc(categories.order)),
+      db.select().from(challenges),
+      db.select().from(solves),
+    ]);
 
-    // Fetch challenges (published only for players, or all for admin)
-    const allChallenges = await db.select().from(challenges);
     const visibleChallenges = allChallenges.filter(
       (c) => c.status === 'published' || (session && session.role === 'admin')
     );
-
-    // Fetch all solves to compute solve counts and user solve status
-    const allSolves = await db.select().from(solves);
 
     const solvesByChallenge = new Map<string, number>();
     const userSolves = new Set<string>();
@@ -50,14 +51,21 @@ export async function GET() {
         status: c.status,
         attachmentUrl: c.attachmentUrl,
         isSolved,
-        // Flag is intentionally omitted!
       };
     });
 
-    return NextResponse.json({
-      categories: allCategories,
-      challenges: formattedChallenges,
-    });
+    return NextResponse.json(
+      {
+        categories: allCategories,
+        challenges: formattedChallenges,
+        isPaused: ctfStatus.isPaused,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3, stale-while-revalidate=15',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Error fetching challenges:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });

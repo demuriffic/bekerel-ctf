@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { marked } from 'marked';
+import { renderMarkdown } from '@/lib/markdown';
 import { ArrowLeft, Shield, PlusCircle, AlertCircle } from 'lucide-react';
 
 interface Category {
@@ -276,7 +276,7 @@ export default function NewChallengePage() {
             ) : (
               <div
                 className="w-full min-h-[200px] p-4 rounded bg-[#080d0b] border border-[#1a3026] prose prose-invert max-w-none text-sm font-sans"
-                dangerouslySetInnerHTML={{ __html: marked.parse(description || '*No description provided yet.*') as string }}
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(description || '*No description provided yet.*') }}
               />
             )}
           </div>

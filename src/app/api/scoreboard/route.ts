@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
 import { db, users, solves } from '@/db';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { initDb } from '@/db/migrate';
 
 export async function GET() {
   try {
     await initDb();
 
-    // Get non-banned players
-    const allUsers = await db.select().from(users).where(eq(users.banned, false));
+    // Get non-banned competitors (players only, excluding admins)
+    const allUsers = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.banned, false), eq(users.role, 'player')));
     const allSolves = await db.select().from(solves);
 
     // Group solves by user

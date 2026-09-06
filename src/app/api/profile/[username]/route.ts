@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db, users, solves, challenges, categories } from '@/db';
-import { eq, desc } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { initDb } from '@/db/migrate';
 
 export async function GET(
@@ -16,8 +16,11 @@ export async function GET(
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
     }
 
-    // Get all users and solves to compute rank
-    const allUsers = await db.select().from(users).where(eq(users.banned, false));
+    // Get all competitors (players only, excluding admins) to compute rank
+    const allCompetitors = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.banned, false), eq(users.role, 'player')));
     const allSolves = await db.select().from(solves);
 
     const scores = new Map<string, number>();
@@ -25,12 +28,12 @@ export async function GET(
       scores.set(s.userId, (scores.get(s.userId) || 0) + s.pointsAwarded);
     }
 
-    const sortedUsers = allUsers
+    const sortedCompetitors = allCompetitors
       .map((u) => ({ id: u.id, score: scores.get(u.id) || 0 }))
       .sort((a, b) => b.score - a.score);
 
-    const rankIndex = sortedUsers.findIndex((u) => u.id === user.id);
-    const rank = rankIndex !== -1 ? rankIndex + 1 : sortedUsers.length;
+    const rankIndex = sortedCompetitors.findIndex((u) => u.id === user.id);
+    const rank = user.role === 'admin' ? 0 : rankIndex !== -1 ? rankIndex + 1 : sortedCompetitors.length + 1;
 
     // Fetch user's solves with details
     const userSolves = await db

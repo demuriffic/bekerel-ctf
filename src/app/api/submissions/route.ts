@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { db, challenges, solves, submissions } from '@/db';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, gte } from 'drizzle-orm';
 import { getSession } from '@/lib/auth';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { calculateDynamicPoints } from '@/lib/scoring';
 import { getCtfStatus } from '@/lib/ctf';
 import { initDb } from '@/db/migrate';
+
+function timingSafeFlagMatch(submitted: string, actual: string): boolean {
+  const hashA = crypto.createHash('sha256').update(submitted).digest();
+  const hashB = crypto.createHash('sha256').update(actual).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
 
 export async function POST(req: Request) {
   try {
@@ -31,13 +38,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Flag cannot be empty' }, { status: 400 });
     }
 
-    // Rate limiting: 10 attempts per minute per challenge per user
+    // Rate limiting: In-memory fast layer
     const rateLimitKey = `submit:${session.id}:${challengeId}`;
     const rateCheck = checkRateLimit(rateLimitKey, 10, 60000);
     if (!rateCheck.allowed) {
       const waitSeconds = Math.ceil(rateCheck.resetInMs / 1000);
       return NextResponse.json(
         { error: `Too many submissions. Please wait ${waitSeconds}s before trying again.` },
+        { status: 429 }
+      );
+    }
+
+    // Rate limiting: Persistent database layer across serverless instances (10 per 60s)
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    const [recentDbSubmissions] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(submissions)
+      .where(
+        and(
+          eq(submissions.userId, session.id),
+          eq(submissions.challengeId, challengeId),
+          gte(submissions.submittedAt, oneMinuteAgo)
+        )
+      );
+
+    if ((recentDbSubmissions?.count || 0) >= 10) {
+      return NextResponse.json(
+        { error: 'Too many submissions. Rate limit is 10 attempts per minute. Please wait.' },
         { status: 429 }
       );
     }
@@ -77,8 +104,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check flag
-    const isCorrect = trimmedFlag === challenge.flag.trim();
+    // Check flag with constant-time comparison
+    const isCorrect = timingSafeFlagMatch(trimmedFlag, challenge.flag.trim());
 
     // Log the submission attempt in audit log
     await db.insert(submissions).values({
@@ -109,12 +136,26 @@ export async function POST(req: Request) {
       currentSolveCount
     );
 
-    // Record the solve
-    await db.insert(solves).values({
-      userId: session.id,
-      challengeId: challenge.id,
-      pointsAwarded,
-    });
+    // Record the solve with graceful concurrent double-solve constraint handling
+    try {
+      await db.insert(solves).values({
+        userId: session.id,
+        challengeId: challenge.id,
+        pointsAwarded,
+      });
+    } catch (insertError: any) {
+      if (
+        insertError?.code === '23505' ||
+        String(insertError?.message || '').toLowerCase().includes('unique') ||
+        String(insertError?.message || '').toLowerCase().includes('duplicate')
+      ) {
+        return NextResponse.json(
+          { error: 'You have already solved this challenge!', alreadySolved: true },
+          { status: 400 }
+        );
+      }
+      throw insertError;
+    }
 
     return NextResponse.json({
       success: true,

@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
 import { db, users, solves } from '@/db';
-import { eq, inArray, asc } from 'drizzle-orm';
+import { eq, and, asc } from 'drizzle-orm';
 import { initDb } from '@/db/migrate';
 
 export async function GET() {
   try {
     await initDb();
 
-    // Fetch non-banned users
-    const allUsers = await db.select().from(users).where(eq(users.banned, false));
+    // Fetch non-banned competitors (players only, excluding admins)
+    const allUsers = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.banned, false), eq(users.role, 'player')));
     const allSolves = await db.select().from(solves).orderBy(asc(solves.solvedAt));
 
     // Calculate total scores to find top 10

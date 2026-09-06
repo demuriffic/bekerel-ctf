@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { db, users, challenges, categories, solves } from '@/db';
-import { eq } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { initDb } from '@/db/migrate';
 import { getCtfStatus } from '@/lib/ctf';
 import { CTF_CONFIG } from '@/lib/config';
@@ -12,10 +12,26 @@ export default async function HomePage() {
   await initDb();
   const ctfStatus = await getCtfStatus();
 
-  const allPlayers = await db.select().from(users).where(eq(users.role, 'player'));
-  const allChallenges = await db.select().from(challenges).where(eq(challenges.status, 'published'));
+  // Aggregate count queries for high performance and minimal memory usage
+  const [playerMetric] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(users)
+    .where(and(eq(users.role, 'player'), eq(users.banned, false)));
+
+  const [challengeMetric] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(challenges)
+    .where(eq(challenges.status, 'published'));
+
+  const [solveMetric] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(solves);
+
   const allCategories = await db.select().from(categories);
-  const allSolves = await db.select().from(solves);
+
+  const totalPlayers = playerMetric?.count || 0;
+  const totalChallenges = challengeMetric?.count || 0;
+  const totalSolves = solveMetric?.count || 0;
 
   return (
     <div className="flex-1 flex flex-col justify-center relative overflow-hidden py-12 px-4 sm:px-6 lg:px-8">
@@ -76,21 +92,21 @@ export default async function HomePage() {
             <div className="flex justify-center text-gray-500 mb-1">
               <Shield className="w-5 h-5 text-[#00ff41]" />
             </div>
-            <div className="text-2xl sm:text-3xl font-bold font-mono-code text-white">{allChallenges.length}</div>
+            <div className="text-2xl sm:text-3xl font-bold font-mono-code text-white">{totalChallenges}</div>
             <div className="text-xs text-gray-400 font-mono-code uppercase">Challenges</div>
           </div>
           <div className="p-4 rounded border border-[#1a3026] bg-[#0d1613]/80 backdrop-blur-sm text-center space-y-1">
             <div className="flex justify-center text-gray-500 mb-1">
               <Flame className="w-5 h-5 text-amber-400" />
             </div>
-            <div className="text-2xl sm:text-3xl font-bold font-mono-code text-white">{allSolves.length}</div>
+            <div className="text-2xl sm:text-3xl font-bold font-mono-code text-white">{totalSolves}</div>
             <div className="text-xs text-gray-400 font-mono-code uppercase">Flags Captured</div>
           </div>
           <div className="p-4 rounded border border-[#1a3026] bg-[#0d1613]/80 backdrop-blur-sm text-center space-y-1">
             <div className="flex justify-center text-gray-500 mb-1">
               <Target className="w-5 h-5 text-cyan-400" />
             </div>
-            <div className="text-2xl sm:text-3xl font-bold font-mono-code text-white">{allPlayers.length}</div>
+            <div className="text-2xl sm:text-3xl font-bold font-mono-code text-white">{totalPlayers}</div>
             <div className="text-xs text-gray-400 font-mono-code uppercase">Operators</div>
           </div>
           <div className="p-4 rounded border border-[#1a3026] bg-[#0d1613]/80 backdrop-blur-sm text-center space-y-1">

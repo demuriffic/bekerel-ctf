@@ -53,6 +53,31 @@ export async function PUT(
       attachmentUrl,
     } = body;
 
+    if (maxPoints !== undefined && minPoints !== undefined) {
+      const numMax = Number(maxPoints);
+      const numMin = Number(minPoints);
+      if (isNaN(numMax) || isNaN(numMin) || numMin <= 0 || numMax < numMin) {
+        return NextResponse.json(
+          { error: 'Invalid points: Max points must be >= min points > 0' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (decayFactor !== undefined && Number(decayFactor) < 0) {
+      return NextResponse.json(
+        { error: 'Decay factor cannot be negative' },
+        { status: 400 }
+      );
+    }
+
+    if (attachmentUrl && !/^https?:\/\//i.test(attachmentUrl.trim())) {
+      return NextResponse.json(
+        { error: 'Attachment URL must start with http:// or https://' },
+        { status: 400 }
+      );
+    }
+
     const [updated] = await db
       .update(challenges)
       .set({

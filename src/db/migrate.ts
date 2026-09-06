@@ -62,38 +62,50 @@ CREATE TABLE IF NOT EXISTS ctf_settings (
 `;
 
 let initialized = false;
+let initPromise: Promise<void> | null = null;
 
 export async function initDb() {
   if (initialized) return;
 
-  const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (!initPromise) {
+    initPromise = (async () => {
+      try {
+        const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-  if (connectionString && !connectionString.includes('memory') && !connectionString.includes('localhost:0')) {
-    const { neon } = require('@neondatabase/serverless');
-    const sql = neon(connectionString);
-    // Split and execute SQL statements
-    const statements = INIT_SQL.split(';')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-    for (const statement of statements) {
-      await sql(statement);
-    }
-  } else {
-    const { PGlite } = require('@electric-sql/pglite');
-    const path = require('path');
-    const fs = require('fs');
-    const dbPath = path.join(process.cwd(), '.local_db');
-    if (!fs.existsSync(dbPath)) {
-      fs.mkdirSync(dbPath, { recursive: true });
-    }
-    const client = new PGlite(dbPath);
-    await client.exec(INIT_SQL);
+        if (connectionString && !connectionString.includes('memory') && !connectionString.includes('localhost:0')) {
+          const { neon } = require('@neondatabase/serverless');
+          const sql = neon(connectionString);
+          // Split and execute SQL statements
+          const statements = INIT_SQL.split(';')
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+          for (const statement of statements) {
+            await sql(statement);
+          }
+        } else {
+          const { PGlite } = require('@electric-sql/pglite');
+          const path = require('path');
+          const fs = require('fs');
+          const dbPath = path.join(process.cwd(), '.local_db');
+          if (!fs.existsSync(dbPath)) {
+            fs.mkdirSync(dbPath, { recursive: true });
+          }
+          const client = new PGlite(dbPath);
+          await client.exec(INIT_SQL);
+        }
+
+        // Seed default admin if ADMIN_EMAIL is set
+        await seedAdmin();
+
+        initialized = true;
+      } catch (err) {
+        initPromise = null; // Allow retry on failure
+        throw err;
+      }
+    })();
   }
 
-  // Seed default admin if ADMIN_EMAIL is set
-  await seedAdmin();
-
-  initialized = true;
+  return initPromise;
 }
 
 export async function seedAdmin() {

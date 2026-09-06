@@ -17,14 +17,17 @@ export default function AdminSettingsPage() {
       .then((data) => {
         const s = data.settings;
         if (s) {
+          const toLocalInputFormat = (isoString: string) => {
+            const d = new Date(isoString);
+            const offset = d.getTimezoneOffset() * 60000;
+            return new Date(d.getTime() - offset).toISOString().slice(0, 16);
+          };
+
           if (s.startTime) {
-            // Format to datetime-local input string YYYY-MM-DDTHH:mm
-            const startD = new Date(s.startTime);
-            setStartTime(startD.toISOString().slice(0, 16));
+            setStartTime(toLocalInputFormat(s.startTime));
           }
           if (s.endTime) {
-            const endD = new Date(s.endTime);
-            setEndTime(endD.toISOString().slice(0, 16));
+            setEndTime(toLocalInputFormat(s.endTime));
           }
         }
         setLoading(false);

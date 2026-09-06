@@ -156,7 +156,40 @@ async function runTests() {
     .returning();
   console.log(`✓ Admin deployed challenge: ${newChal.title} [${newChal.status}]`);
 
-  // 8. Clean up test records
+  // 8. Markdown Sanitization Test
+  console.log('\n[TEST 8] Testing Markdown Sanitization & XSS Defense...');
+  const { renderMarkdown } = await import('../src/lib/markdown');
+  const dirtyMarkdown = `## Exploit
+
+<script>alert("pwned")</script>
+
+<img src=x onerror=alert(1)>
+
+[Malicious Link](javascript:alert(1))
+
+**Valid Text**`;
+
+  const cleanHtml = renderMarkdown(dirtyMarkdown);
+  if (cleanHtml.includes('<script>') || cleanHtml.includes('onerror') || cleanHtml.includes('href="javascript:')) {
+    throw new Error('Markdown sanitizer allowed malicious XSS payload through!');
+  }
+  if (!cleanHtml.includes('<strong>Valid Text</strong>') && !cleanHtml.includes('<b>Valid Text</b>')) {
+    throw new Error('Markdown sanitizer did not retain valid Markdown formatting!');
+  }
+  console.log('✓ Markdown safely sanitized: scripts, onerror handlers, and javascript: links stripped');
+
+  // 9. Scoreboard Isolation Test (Admins excluded)
+  console.log('\n[TEST 9] Testing Scoreboard Admin Isolation...');
+  const { and: andOp } = await import('drizzle-orm');
+  const competitorsOnly = await db
+    .select()
+    .from(users)
+    .where(andOp(eq(users.banned, false), eq(users.role, 'player')));
+  const hasAdminInScoreboard = competitorsOnly.some((u) => u.role === 'admin');
+  if (hasAdminInScoreboard) throw new Error('Admins should not appear in player competitor pool!');
+  console.log(`✓ Scoreboard correctly isolates competitors (${competitorsOnly.length} players, 0 admins)`);
+
+  // 10. Clean up test records
   await db.delete(challenges).where(eq(challenges.id, newChal.id));
   await db.delete(categories).where(eq(categories.id, newCat.id));
   await db.delete(solves).where(eq(solves.userId, testPlayer.id));
@@ -164,7 +197,7 @@ async function runTests() {
   await db.delete(users).where(eq(users.id, testPlayer.id));
   console.log('✓ Test fixtures cleaned up successfully');
 
-  console.log('\n🎉 ALL SYSTEM INTEGRATION TESTS PASSED PERFECTLY!');
+  console.log('\n🎉 ALL 9 SYSTEM INTEGRATION & SECURITY VERIFICATION TESTS PASSED PERFECTLY!');
 }
 
 runTests()

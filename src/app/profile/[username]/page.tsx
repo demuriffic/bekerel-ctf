@@ -108,7 +108,9 @@ export default function ProfilePage({
         <div className="flex items-center gap-6 border-t sm:border-t-0 border-[#1a3026] pt-4 sm:pt-0">
           <div className="text-center">
             <div className="text-xs font-mono-code text-gray-400 uppercase">RANK</div>
-            <div className="text-2xl font-black font-mono-code text-amber-400">#{player.rank}</div>
+            <div className="text-2xl font-black font-mono-code text-amber-400">
+              {player.rank > 0 ? `#${player.rank}` : 'STAFF'}
+            </div>
           </div>
           <div className="h-8 w-px bg-[#1a3026]" />
           <div className="text-center">

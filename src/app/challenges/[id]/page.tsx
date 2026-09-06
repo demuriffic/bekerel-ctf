@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { marked } from 'marked';
+import { renderMarkdown } from '@/lib/markdown';
 import {
   ArrowLeft,
   Shield,
@@ -143,7 +143,8 @@ export default function ChallengeDetailPage({
     );
   }
 
-  const renderedDescription = marked.parse(challenge.description || '');
+  const renderedDescription = renderMarkdown(challenge.description || '');
+  const isSafeAttachmentUrl = challenge.attachmentUrl && /^https?:\/\//i.test(challenge.attachmentUrl);
 
   return (
     <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -210,10 +211,10 @@ export default function ChallengeDetailPage({
         </div>
 
         {/* Attachment URL */}
-        {challenge.attachmentUrl && (
+        {isSafeAttachmentUrl && (
           <div className="pt-2">
             <a
-              href={challenge.attachmentUrl}
+              href={challenge.attachmentUrl || undefined}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 rounded border border-[#1a3026] bg-[#13241d] hover:bg-[#1a3026] text-xs font-mono-code text-cyan-400 hover:text-cyan-300 transition-colors"

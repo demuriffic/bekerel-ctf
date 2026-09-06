@@ -5,9 +5,11 @@ import { db, users } from '@/db';
 import { eq } from 'drizzle-orm';
 import { initDb } from '@/db/migrate';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.AUTH_SECRET || process.env.JWT_SECRET || 'super-secret-ctf-key-change-in-production-2026'
-);
+const rawSecret = process.env.AUTH_SECRET || process.env.JWT_SECRET || 'super-secret-ctf-key-change-in-production-2026';
+if (process.env.NODE_ENV === 'production' && !process.env.AUTH_SECRET && !process.env.JWT_SECRET) {
+  console.warn('[SECURITY WARNING] AUTH_SECRET or JWT_SECRET is not configured! Using fallback key.');
+}
+const JWT_SECRET = new TextEncoder().encode(rawSecret);
 
 const COOKIE_NAME = 'ctf_session';
 

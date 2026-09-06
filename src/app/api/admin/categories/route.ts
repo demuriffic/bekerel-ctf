@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db, categories, challenges } from '@/db';
-import { asc } from 'drizzle-orm';
+import { asc, sql } from 'drizzle-orm';
 import { requireAdmin } from '@/lib/auth';
 import { initDb } from '@/db/migrate';
 
@@ -46,6 +46,22 @@ export async function POST(req: Request) {
 
     if (!name || !name.trim()) {
       return NextResponse.json({ error: 'Category name is required' }, { status: 400 });
+    }
+
+    const trimmedName = name.trim();
+
+    // Check for duplicate category name (case-insensitive)
+    const existing = await db
+      .select()
+      .from(categories)
+      .where(sql`lower(${categories.name}) = lower(${trimmedName})`)
+      .limit(1);
+
+    if (existing.length > 0) {
+      return NextResponse.json(
+        { error: 'A category with this name already exists' },
+        { status: 409 }
+      );
     }
 
     const [newCategory] = await db

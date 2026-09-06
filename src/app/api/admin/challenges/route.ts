@@ -92,6 +92,38 @@ export async function POST(req: Request) {
       );
     }
 
+    const numMax = Number(maxPoints);
+    const numMin = Number(minPoints);
+    const numDecay = Number(decayFactor);
+
+    if (isNaN(numMax) || isNaN(numMin) || isNaN(numDecay) || numMin <= 0) {
+      return NextResponse.json(
+        { error: 'Points must be positive numbers' },
+        { status: 400 }
+      );
+    }
+
+    if (numMax < numMin) {
+      return NextResponse.json(
+        { error: 'Max points must be greater than or equal to min points' },
+        { status: 400 }
+      );
+    }
+
+    if (numDecay < 0) {
+      return NextResponse.json(
+        { error: 'Decay factor cannot be negative' },
+        { status: 400 }
+      );
+    }
+
+    if (attachmentUrl && !/^https?:\/\//i.test(attachmentUrl.trim())) {
+      return NextResponse.json(
+        { error: 'Attachment URL must start with http:// or https://' },
+        { status: 400 }
+      );
+    }
+
     const [newChallenge] = await db
       .insert(challenges)
       .values({

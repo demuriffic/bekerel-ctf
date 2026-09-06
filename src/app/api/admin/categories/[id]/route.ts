@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db, categories } from '@/db';
-import { eq } from 'drizzle-orm';
+import { eq, and, ne, sql } from 'drizzle-orm';
 import { requireAdmin } from '@/lib/auth';
 import { initDb } from '@/db/migrate';
 
@@ -18,6 +18,31 @@ export async function PUT(
     const { id } = await params;
     const body = await req.json();
     const { name, color, order } = body;
+
+    if (name !== undefined) {
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        return NextResponse.json({ error: 'Category name cannot be empty' }, { status: 400 });
+      }
+
+      const duplicate = await db
+        .select()
+        .from(categories)
+        .where(
+          and(
+            sql`lower(${categories.name}) = lower(${trimmedName})`,
+            ne(categories.id, id)
+          )
+        )
+        .limit(1);
+
+      if (duplicate.length > 0) {
+        return NextResponse.json(
+          { error: 'Another category with this name already exists' },
+          { status: 409 }
+        );
+      }
+    }
 
     const [updated] = await db
       .update(categories)

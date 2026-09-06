@@ -56,14 +56,14 @@ export default function ScoreboardChartPage() {
             className="inline-flex items-center gap-2 text-xs font-mono-code text-gray-400 hover:text-[#00ff41] transition-colors mb-2"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Leaderboard</span>
+            <span>Back to Scoreboard</span>
           </Link>
           <h1 className="text-3xl font-bold font-mono-code text-white flex items-center gap-3">
             <ChartIcon className="w-8 h-8 text-[#00ff41]" />
-            SCORE PROGRESSION TIMELINE
+            SCORE TIMELINE
           </h1>
           <p className="text-sm text-gray-400 mt-1 font-mono-code">
-            Real-time cumulative score trajectory for the top 10 operators.
+            Scores over time for the top 10 players.
           </p>
         </div>
       </div>
@@ -71,14 +71,14 @@ export default function ScoreboardChartPage() {
       {/* Chart Container Card */}
       <div className="p-6 rounded-lg border border-[#1a3026] bg-[#0d1613] shadow-2xl">
         {loading ? (
-          <div className="h-96 flex items-center justify-center font-mono-code text-gray-500 animate-pulse">
-            CALCULATING TIMELINE TRAJECTORIES...
+          <div className="h-96 flex items-center justify-center font-mono-code text-gray-500">
+            Loading timeline...
           </div>
         ) : chartData.length === 0 ? (
           <div className="h-96 flex flex-col items-center justify-center font-mono-code text-gray-500 space-y-2">
             <Trophy className="w-12 h-12 text-gray-600 mb-2" />
-            <div>NO SOLVES LOGGED ON TIMELINE YET</div>
-            <p className="text-xs text-gray-600">Points will appear once operators capture flags.</p>
+            <div>No solves yet</div>
+            <p className="text-xs text-gray-600">Points will appear once players solve challenges.</p>
           </div>
         ) : (
           <div className="h-[500px] w-full pt-4">

@@ -47,10 +47,10 @@ export default function LoginPage() {
             <Terminal className="w-6 h-6" />
           </div>
           <h2 className="text-2xl font-bold font-mono-code text-white tracking-wide">
-            OPERATOR AUTHENTICATION
+            LOG IN
           </h2>
           <p className="text-xs text-gray-400 font-mono-code">
-            Enter your credentials to access system terminal
+            Enter your credentials to continue
           </p>
         </div>
 
@@ -73,7 +73,7 @@ export default function LoginPage() {
                 required
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
-                placeholder="operator_1337 or user@ctf.local"
+                placeholder="username or user@example.com"
                 className="w-full px-3.5 py-2.5 rounded bg-[#13241d] border border-[#1a3026] text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#00ff41] focus:ring-1 focus:ring-[#00ff41] font-mono-code transition-all"
               />
             </div>
@@ -98,10 +98,10 @@ export default function LoginPage() {
               className="w-full py-2.5 px-4 rounded bg-[#00ff41] hover:bg-[#00e63a] text-[#041409] font-bold text-sm font-mono-code uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(0,255,65,0.25)] hover:shadow-[0_0_20px_rgba(0,255,65,0.4)] disabled:opacity-50"
             >
               {loading ? (
-                <span>AUTHENTICATING...</span>
+                <span>LOGGING IN...</span>
               ) : (
                 <>
-                  <span>INITIALIZE SESSION</span>
+                  <span>LOG IN</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -109,9 +109,9 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 pt-4 border-t border-[#1a3026] text-center text-xs text-gray-400 font-mono-code">
-            New operator?{' '}
+            Need an account?{' '}
             <Link href="/register" className="text-[#00ff41] hover:underline font-semibold">
-              Create an account
+              Register
             </Link>
           </div>
         </div>

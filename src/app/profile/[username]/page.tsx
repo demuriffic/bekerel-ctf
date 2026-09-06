@@ -58,8 +58,8 @@ export default function ProfilePage({
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto w-full px-4 py-20 text-center font-mono-code text-gray-500 animate-pulse">
-        ACCESSING OPERATOR DOSSIER...
+      <div className="max-w-5xl mx-auto w-full px-4 py-20 text-center font-mono-code text-gray-500">
+        Loading profile...
       </div>
     );
   }
@@ -67,10 +67,10 @@ export default function ProfilePage({
   if (!data) {
     return (
       <div className="max-w-5xl mx-auto w-full px-4 py-20 text-center space-y-4 font-mono-code">
-        <div className="text-red-400">OPERATOR DOSSIER NOT FOUND</div>
+        <div className="text-red-400">User not found</div>
         <Link href="/scoreboard" className="text-sm text-[#00ff41] hover:underline flex items-center justify-center gap-1">
           <ArrowLeft className="w-4 h-4" />
-          <span>Return to Scoreboard</span>
+          <span>Back to Scoreboard</span>
         </Link>
       </div>
     );
@@ -99,7 +99,7 @@ export default function ProfilePage({
             </div>
             <div className="flex items-center gap-2 text-xs font-mono-code text-gray-400">
               <Calendar className="w-3.5 h-3.5" />
-              <span>Enrolled {new Date(player.createdAt).toLocaleDateString()}</span>
+              <span>Joined {new Date(player.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function ProfilePage({
         <div className="space-y-4">
           <h3 className="text-sm font-mono-code font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
             <Award className="w-4 h-4 text-[#00ff41]" />
-            Vector Proficiency Breakdown
+            Category Breakdown
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {categoryBreakdown.map((cat) => (
@@ -158,7 +158,7 @@ export default function ProfilePage({
       <div className="space-y-4">
         <h3 className="text-sm font-mono-code font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-[#00ff41]" />
-          Infiltration History ({solves.length})
+          Solve History ({solves.length})
         </h3>
 
         <div className="border border-[#1a3026] rounded-lg bg-[#0d1613] overflow-hidden shadow-lg">
@@ -176,7 +176,7 @@ export default function ProfilePage({
                 {solves.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="py-8 text-center text-gray-500">
-                      NO FLAGS CAPTURED YET
+                      No solves yet
                     </td>
                   </tr>
                 ) : (

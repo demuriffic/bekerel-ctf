@@ -42,10 +42,10 @@ export default function ScoreboardPage() {
         <div>
           <h1 className="text-3xl font-bold font-mono-code text-white flex items-center gap-3">
             <Trophy className="w-8 h-8 text-[#00ff41]" />
-            GLOBAL SCOREBOARD
+            SCOREBOARD
           </h1>
           <p className="text-sm text-gray-400 mt-1 font-mono-code">
-            Live rankings of all active operators competing in the matrix.
+            Live rankings of players.
           </p>
         </div>
 
@@ -55,7 +55,7 @@ export default function ScoreboardPage() {
             className="flex items-center gap-2 px-4 py-2 rounded border border-[#1a3026] bg-[#0d1613] hover:bg-[#13241d] hover:border-[#00ff41]/40 text-xs font-mono-code text-cyan-400 transition-all shadow-sm"
           >
             <LineChart className="w-4 h-4" />
-            <span>View Timeline Graph</span>
+            <span>Timeline Graph</span>
           </Link>
         </div>
       </div>
@@ -95,7 +95,7 @@ export default function ScoreboardPage() {
               {leaderboard[0].score} <span className="text-xs font-normal text-gray-400">PTS</span>
             </div>
             <div className="text-xs text-gray-300 font-mono-code">
-              {leaderboard[0].solvesCount} solves • REIGNING LEADER
+              {leaderboard[0].solvesCount} solves
             </div>
           </div>
 
@@ -126,7 +126,7 @@ export default function ScoreboardPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Filter operator callsign..."
+          placeholder="Search player..."
           className="w-full pl-9 pr-4 py-2 rounded bg-[#0d1613] border border-[#1a3026] text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#00ff41] font-mono-code"
         />
       </div>
@@ -138,7 +138,7 @@ export default function ScoreboardPage() {
             <thead className="bg-[#080d0b] text-xs uppercase text-gray-400 border-b border-[#1a3026]">
               <tr>
                 <th className="py-3.5 px-4 w-16 text-center">Rank</th>
-                <th className="py-3.5 px-4">Operator</th>
+                <th className="py-3.5 px-4">Player</th>
                 <th className="py-3.5 px-4 text-center">Solves</th>
                 <th className="py-3.5 px-4 text-right">Score</th>
                 <th className="py-3.5 px-4 text-right hidden sm:table-cell">Last Solve</th>
@@ -147,14 +147,14 @@ export default function ScoreboardPage() {
             <tbody className="divide-y divide-[#1a3026]">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-gray-500 animate-pulse">
-                    SYNCHRONIZING SCOREBOARD...
+                  <td colSpan={5} className="py-12 text-center text-gray-500">
+                    Loading scoreboard...
                   </td>
                 </tr>
               ) : filteredLeaderboard.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-gray-500">
-                    NO OPERATORS FOUND
+                    No players found
                   </td>
                 </tr>
               ) : (

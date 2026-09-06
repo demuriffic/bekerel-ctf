@@ -124,8 +124,8 @@ export default function ChallengeDetailPage({
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto w-full px-4 py-20 text-center font-mono-code text-gray-500 animate-pulse">
-        DECRYPTING CHALLENGE PAYLOAD...
+      <div className="max-w-4xl mx-auto w-full px-4 py-20 text-center font-mono-code text-gray-500">
+        Loading challenge...
       </div>
     );
   }
@@ -133,13 +133,13 @@ export default function ChallengeDetailPage({
   if (!challenge) {
     return (
       <div className="max-w-4xl mx-auto w-full px-4 py-20 text-center space-y-4">
-        <div className="text-red-400 font-mono-code">CHALLENGE NOT FOUND OR OFFLINE</div>
+        <div className="text-red-400 font-mono-code">Challenge not found</div>
         <Link
           href="/challenges"
           className="inline-flex items-center gap-2 text-sm text-[#00ff41] hover:underline font-mono-code"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Return to Challenge Arena</span>
+          <span>Back to Challenges</span>
         </Link>
       </div>
     );
@@ -204,7 +204,7 @@ export default function ChallengeDetailPage({
         {/* Challenge Description (Markdown) */}
         <div className="space-y-4">
           <div className="text-xs font-mono-code text-gray-400 uppercase tracking-wider">
-            MISSION BRIEFING:
+            Description:
           </div>
           <div
             className="prose prose-invert max-w-none text-sm text-gray-300 leading-relaxed font-sans [&>p]:mb-4 [&>pre]:bg-[#080d0b] [&>pre]:p-4 [&>pre]:rounded [&>pre]:border [&>pre]:border-[#1a3026] [&>pre]:font-mono-code [&>code]:text-[#00ff41] [&>code]:bg-[#13241d] [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>ul]:list-disc [&>ul]:pl-5 [&>ol]:list-decimal [&>ol]:pl-5"
@@ -222,7 +222,7 @@ export default function ChallengeDetailPage({
               className="inline-flex items-center gap-2 px-4 py-2 rounded border border-[#1a3026] bg-[#13241d] hover:bg-[#1a3026] text-xs font-mono-code text-cyan-400 hover:text-cyan-300 transition-colors"
             >
               <Download className="w-4 h-4" />
-              <span>Download / Access Resources</span>
+              <span>Download Attachment</span>
               <ExternalLink className="w-3 h-3 text-gray-500" />
             </a>
           </div>
@@ -234,7 +234,7 @@ export default function ChallengeDetailPage({
             <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/40 flex items-center gap-3 text-sm text-amber-400 font-mono-code shadow-[0_0_15px_rgba(245,158,11,0.15)]">
               <AlertCircle className="w-5 h-5 shrink-0 text-amber-400 animate-pulse" />
               <div>
-                <span className="font-bold">COMPETITION PAUSED:</span> Flag submissions are currently disabled by administrators.
+                <span className="font-bold">Competition Paused:</span> Flag submissions are temporarily disabled.
               </div>
             </div>
           )}
@@ -243,14 +243,14 @@ export default function ChallengeDetailPage({
             <div className="p-4 rounded-lg bg-[#00ff41]/10 border border-[#00ff41]/40 flex items-center gap-3 text-sm text-[#00ff41] font-mono-code shadow-[0_0_15px_rgba(0,255,65,0.15)]">
               <CheckCircle2 className="w-5 h-5 text-[#00ff41] shrink-0" />
               <div>
-                <span className="font-bold">FLAG CAPTURED!</span> You have successfully solved this challenge.
+                <span className="font-bold">Challenge Solved!</span>
               </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-mono-code text-gray-400 uppercase">
-                  SUBMIT CAPTURED FLAG
+                  Submit Flag
                 </label>
                 <span className="text-[11px] font-mono-code text-gray-500">
                   Rate limit: 10 attempts / min
@@ -264,7 +264,7 @@ export default function ChallengeDetailPage({
                   disabled={isPaused}
                   value={flag}
                   onChange={(e) => setFlag(e.target.value)}
-                  placeholder={isPaused ? "Submissions currently locked..." : "flag{...}"}
+                  placeholder={isPaused ? "Submissions paused..." : "flag{...}"}
                   className="flex-1 px-4 py-2.5 rounded bg-[#13241d] border border-[#1a3026] text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#00ff41] focus:ring-1 focus:ring-[#00ff41] font-mono-code transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
@@ -273,7 +273,7 @@ export default function ChallengeDetailPage({
                   className="px-6 py-2.5 rounded bg-[#00ff41] hover:bg-[#00e63a] text-[#041409] font-bold text-sm font-mono-code uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(0,255,65,0.2)] hover:shadow-[0_0_20px_rgba(0,255,65,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="w-4 h-4" />
-                  <span>{isPaused ? 'PAUSED' : submitting ? 'VALIDATING...' : 'SUBMIT'}</span>
+                  <span>{isPaused ? 'PAUSED' : submitting ? 'SUBMITTING...' : 'SUBMIT'}</span>
                 </button>
               </div>
             </form>

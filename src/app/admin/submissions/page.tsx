@@ -63,10 +63,10 @@ export default function AdminSubmissionsPage() {
         <div>
           <h1 className="text-2xl font-bold font-mono-code text-white flex items-center gap-2.5">
             <ScrollText className="w-6 h-6 text-[#00ff41]" />
-            SUBMISSION AUDIT LOG
+            SUBMISSIONS
           </h1>
           <p className="text-xs text-gray-400 font-mono-code mt-1">
-            Complete cryptographic audit trail of all correct and incorrect flag submissions.
+            Log of all flag submissions.
           </p>
         </div>
 
@@ -76,7 +76,7 @@ export default function AdminSubmissionsPage() {
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded border border-[#1a3026] bg-[#0d1613] hover:bg-[#13241d] text-xs font-mono-code text-gray-300 hover:text-white transition-all self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-[#00ff41]' : ''}`} />
-          <span>REFRESH LOGS</span>
+          <span>Refresh</span>
         </button>
       </div>
 
@@ -88,7 +88,7 @@ export default function AdminSubmissionsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by operator, challenge, or flag snippet..."
+            placeholder="Search by player, challenge, or flag..."
             className="w-full pl-9 pr-4 py-2 rounded bg-[#0d1613] border border-[#1a3026] text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#00ff41] font-mono-code"
           />
         </div>
@@ -117,24 +117,24 @@ export default function AdminSubmissionsPage() {
           <table className="w-full text-left text-sm font-mono-code">
             <thead className="bg-[#080d0b] text-xs uppercase text-gray-400 border-b border-[#1a3026]">
               <tr>
-                <th className="py-3 px-4">Verdict</th>
+                <th className="py-3 px-4">Status</th>
                 <th className="py-3 px-4">Timestamp</th>
-                <th className="py-3 px-4">Operator</th>
+                <th className="py-3 px-4">Player</th>
                 <th className="py-3 px-4">Challenge</th>
-                <th className="py-3 px-4">Submitted Flag String</th>
+                <th className="py-3 px-4">Submitted Flag</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1a3026]">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-gray-500 animate-pulse">
-                    PARSING AUDIT LOG STREAMS...
+                  <td colSpan={5} className="py-12 text-center text-gray-500">
+                    Loading submissions...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-gray-500">
-                    NO SUBMISSION RECORDS FOUND
+                    No submissions found
                   </td>
                 </tr>
               ) : (

@@ -150,10 +150,10 @@ export default function EditChallengePage({
       <div className="p-6 sm:p-8 rounded-lg border border-[#1a3026] bg-[#0d1613] shadow-xl space-y-6">
         <div>
           <h1 className="text-xl font-bold font-mono-code text-white">
-            MODIFY CHALLENGE: {title}
+            EDIT CHALLENGE: {title}
           </h1>
           <p className="text-xs text-gray-400 font-mono-code mt-1">
-            Update challenge configuration, flags, and scoring parameters.
+            Update challenge details and scoring.
           </p>
         </div>
 
@@ -207,7 +207,7 @@ export default function EditChallengePage({
 
           <div>
             <label className="block text-xs font-mono-code text-gray-400 mb-1.5 uppercase">
-              Static Flag
+              Flag
             </label>
             <input
               type="text"
@@ -221,7 +221,7 @@ export default function EditChallengePage({
           {/* Dynamic scoring calibration */}
           <div className="p-4 rounded border border-[#1a3026] bg-[#080d0b] space-y-4">
             <div className="text-xs font-mono-code font-bold uppercase text-[#00ff41]">
-              Dynamic Scoring Parameters
+              Dynamic Scoring
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
@@ -300,7 +300,7 @@ export default function EditChallengePage({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-mono-code text-gray-400 uppercase">
-                Challenge Briefing
+                Description
               </label>
               <div className="flex gap-1 border border-[#1a3026] rounded p-0.5 bg-[#080d0b]">
                 <button
@@ -346,7 +346,7 @@ export default function EditChallengePage({
             className="w-full py-3 px-4 rounded bg-[#00ff41] hover:bg-[#00e63a] text-[#041409] font-bold text-sm font-mono-code uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(0,255,65,0.25)] hover:shadow-[0_0_20px_rgba(0,255,65,0.4)] disabled:opacity-50"
           >
             <Save className="w-4 h-4" />
-            <span>{submitting ? 'SAVING CHANGES...' : 'SAVE CHALLENGE CHANGES'}</span>
+            <span>{submitting ? 'SAVING CHANGES...' : 'SAVE CHANGES'}</span>
           </button>
         </form>
       </div>

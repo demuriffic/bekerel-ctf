@@ -61,22 +61,18 @@ export default async function HomePage() {
             />
             <span>
               {ctfStatus.isPaused
-                ? 'COMPETITION PAUSED // SUBMISSIONS LOCKED'
+                ? 'COMPETITION PAUSED'
                 : ctfStatus.isActive
-                ? 'SYSTEM ONLINE // CTF ACTIVE'
+                ? 'COMPETITION ACTIVE'
                 : ctfStatus.hasEnded
-                ? 'COMPETITION CONCLUDED'
-                : 'COUNTDOWN INITIALIZED'}
+                ? 'COMPETITION ENDED'
+                : 'STARTING SOON'}
             </span>
           </div>
         </div>
 
         {/* Hero title */}
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 text-xs font-mono-code text-gray-500 uppercase tracking-widest">
-            <Terminal className="w-4 h-4 text-[#00ff41]" />
-            <span>TERMINAL PROTOCOL ENGAGED</span>
-          </div>
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white font-mono-code">
             <span className="text-[#00ff41] glow-green-text">&gt;</span> {CTF_CONFIG.name}
           </h1>
@@ -92,7 +88,7 @@ export default async function HomePage() {
             className="flex items-center gap-2 px-6 py-3 rounded bg-[#00ff41] text-[#041409] font-bold text-base hover:bg-[#00e63a] transition-all shadow-[0_0_20px_rgba(0,255,65,0.3)] hover:shadow-[0_0_30px_rgba(0,255,65,0.5)]"
           >
             <Flag className="w-5 h-5" />
-            <span>Enter Challenge Arena</span>
+            <span>View Challenges</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
@@ -100,7 +96,7 @@ export default async function HomePage() {
             className="flex items-center gap-2 px-6 py-3 rounded border border-[#1a3026] bg-[#0d1613] text-gray-200 font-semibold text-base hover:border-[#00ff41]/50 hover:text-[#00ff41] transition-all hover:bg-[#13241d]"
           >
             <Trophy className="w-5 h-5 text-[#00ff41]" />
-            <span>Live Scoreboard</span>
+            <span>Scoreboard</span>
           </Link>
         </div>
 
@@ -118,21 +114,21 @@ export default async function HomePage() {
               <Flame className="w-5 h-5 text-amber-400" />
             </div>
             <div className="text-2xl sm:text-3xl font-bold font-mono-code text-white">{totalSolves}</div>
-            <div className="text-xs text-gray-400 font-mono-code uppercase">Flags Captured</div>
+            <div className="text-xs text-gray-400 font-mono-code uppercase">Solves</div>
           </div>
           <div className="p-4 rounded border border-[#1a3026] bg-[#0d1613]/80 backdrop-blur-sm text-center space-y-1">
             <div className="flex justify-center text-gray-500 mb-1">
               <Target className="w-5 h-5 text-cyan-400" />
             </div>
             <div className="text-2xl sm:text-3xl font-bold font-mono-code text-white">{totalPlayers}</div>
-            <div className="text-xs text-gray-400 font-mono-code uppercase">Operators</div>
+            <div className="text-xs text-gray-400 font-mono-code uppercase">Players</div>
           </div>
           <div className="p-4 rounded border border-[#1a3026] bg-[#0d1613]/80 backdrop-blur-sm text-center space-y-1">
             <div className="flex justify-center text-gray-500 mb-1">
               <Cpu className="w-5 h-5 text-purple-400" />
             </div>
             <div className="text-2xl sm:text-3xl font-bold font-mono-code text-white">{allCategories.length}</div>
-            <div className="text-xs text-gray-400 font-mono-code uppercase">Vectors</div>
+            <div className="text-xs text-gray-400 font-mono-code uppercase">Categories</div>
           </div>
         </div>
 
@@ -141,9 +137,9 @@ export default async function HomePage() {
           <div className="flex items-center justify-between border-b border-[#1a3026] pb-3">
             <h3 className="text-sm font-mono-code font-bold uppercase tracking-wider text-gray-300 flex items-center gap-2">
               <Activity className="w-4 h-4 text-[#00ff41]" />
-              Threat Vectors & Categories
+              Categories
             </h3>
-            <span className="text-xs font-mono-code text-gray-500">DYNAMIC SCORING ENABLED</span>
+            <span className="text-xs font-mono-code text-gray-500">DYNAMIC SCORING</span>
           </div>
           <div className="flex flex-wrap gap-2.5">
             {allCategories.map((cat) => (

@@ -21,7 +21,7 @@ export default function AdminExportPage() {
       href: '/api/admin/export?format=csv&type=scoreboard',
     },
     {
-      title: 'Infiltration Solves History',
+      title: 'Solves History',
       description: 'Every captured flag event with user details, challenge, category, and points awarded.',
       format: 'CSV',
       icon: Activity,
@@ -29,7 +29,7 @@ export default function AdminExportPage() {
       href: '/api/admin/export?format=csv&type=solves',
     },
     {
-      title: 'Audit Log Submissions',
+      title: 'Submissions Log',
       description: 'Full record of every flag submission attempt (both valid and invalid) with timestamps.',
       format: 'CSV',
       icon: ScrollText,
@@ -51,10 +51,10 @@ export default function AdminExportPage() {
       <div>
         <h1 className="text-2xl font-bold font-mono-code text-white flex items-center gap-2.5">
           <Download className="w-6 h-6 text-[#00ff41]" />
-          TELEMETRY DATA EXPORT CENTER
+          DATA EXPORT
         </h1>
         <p className="text-xs text-gray-400 font-mono-code mt-1">
-          Generate structured CSV spreadsheets and JSON archives for offline analysis and auditing.
+          Export CSV and JSON files for analysis.
         </p>
       </div>
 

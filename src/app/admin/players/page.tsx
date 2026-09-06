@@ -104,10 +104,10 @@ export default function AdminPlayersPage() {
         <div>
           <h1 className="text-2xl font-bold font-mono-code text-white flex items-center gap-2.5">
             <Users className="w-6 h-6 text-[#00ff41]" />
-            OPERATOR ROSTER & ACCESS CONTROL
+            PLAYERS
           </h1>
           <p className="text-xs text-gray-400 font-mono-code mt-1">
-            Manage competitors, enforce bans, and assign administrator privileges.
+            Manage players, bans, and roles.
           </p>
         </div>
       </div>
@@ -119,7 +119,7 @@ export default function AdminPlayersPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Filter by callsign or email..."
+          placeholder="Filter by username or email..."
           className="w-full pl-9 pr-4 py-2 rounded bg-[#0d1613] border border-[#1a3026] text-xs text-white placeholder-gray-600 focus:outline-none focus:border-[#00ff41] font-mono-code"
         />
       </div>
@@ -130,7 +130,7 @@ export default function AdminPlayersPage() {
           <table className="w-full text-left text-sm font-mono-code">
             <thead className="bg-[#080d0b] text-xs uppercase text-gray-400 border-b border-[#1a3026]">
               <tr>
-                <th className="py-3 px-4">Callsign</th>
+                <th className="py-3 px-4">Username</th>
                 <th className="py-3 px-4">Email</th>
                 <th className="py-3 px-4">Role</th>
                 <th className="py-3 px-4">Status</th>
@@ -142,14 +142,14 @@ export default function AdminPlayersPage() {
             <tbody className="divide-y divide-[#1a3026]">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-500 animate-pulse">
-                    LOADING OPERATOR ROSTER...
+                  <td colSpan={7} className="py-12 text-center text-gray-500">
+                    Loading players...
                   </td>
                 </tr>
               ) : filteredPlayers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-gray-500">
-                    NO OPERATORS FOUND
+                    No players found
                   </td>
                 </tr>
               ) : (

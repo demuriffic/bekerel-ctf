@@ -58,8 +58,8 @@ export default function AdminOverviewPage() {
 
   if (loading) {
     return (
-      <div className="p-12 text-center font-mono-code text-gray-500 animate-pulse">
-        GATHERING TELEMETRY METRICS...
+      <div className="p-12 text-center font-mono-code text-gray-500">
+        Loading metrics...
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function AdminOverviewPage() {
   if (!stats) {
     return (
       <div className="p-12 border border-red-500/30 rounded bg-red-950/20 text-center font-mono-code text-red-400">
-        ADMIN ACCESS REQUIRED OR ERROR LOADING METRICS
+        Error loading metrics
       </div>
     );
   }
@@ -136,7 +136,7 @@ export default function AdminOverviewPage() {
             {stats.totalSolves}
           </div>
           <div className="text-[11px] text-gray-500 font-mono-code">
-            Flags captured
+            Total solves
           </div>
         </div>
 
@@ -158,7 +158,7 @@ export default function AdminOverviewPage() {
       <div className="p-6 rounded-lg border border-[#1a3026] bg-[#0d1613] space-y-4">
         <h3 className="text-sm font-mono-code font-bold uppercase tracking-wider text-gray-300 flex items-center gap-2">
           <Activity className="w-4 h-4 text-[#00ff41]" />
-          Category Vector Performance
+          Category Breakdown
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {categories.map((cat) => (

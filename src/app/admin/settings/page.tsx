@@ -168,10 +168,10 @@ export default function AdminSettingsPage() {
       <div>
         <h1 className="text-2xl font-bold font-mono-code text-white flex items-center gap-2.5">
           <Settings className="w-6 h-6 text-[#00ff41]" />
-          COMPETITION LIFECYCLE & EXECUTION CONTROLS
+          CTF SETTINGS
         </h1>
         <p className="text-xs text-gray-400 font-mono-code mt-1">
-          Pause or resume submissions on demand, calibrate timing windows, and manage testing resets.
+          Pause or resume submissions, set competition start/end times, and reset data.
         </p>
       </div>
 
@@ -205,13 +205,13 @@ export default function AdminSettingsPage() {
               }`}
             />
             <h2 className="text-lg font-bold font-mono-code text-white uppercase tracking-wider">
-              {isPaused ? 'COMPETITION IS PAUSED' : 'COMPETITION IS LIVE & ACTIVE'}
+              {isPaused ? 'COMPETITION PAUSED' : 'COMPETITION ACTIVE'}
             </h2>
           </div>
           <p className="text-xs text-gray-400 font-mono-code">
             {isPaused
-              ? 'Submissions are currently suspended. Participants cannot submit flags until you resume.'
-              : 'Flag submissions are open according to the scheduled competition timing window.'}
+              ? 'Submissions are paused. Players cannot submit flags.'
+              : 'Submissions are active.'}
           </p>
         </div>
 
@@ -311,11 +311,11 @@ export default function AdminSettingsPage() {
         <div className="flex items-center gap-2.5 text-red-400">
           <AlertTriangle className="w-5 h-5" />
           <h2 className="text-base font-bold font-mono-code uppercase tracking-wider">
-            Danger Zone: Competition Reset Operations
+            Danger Zone: Reset Competition
           </h2>
         </div>
         <p className="text-xs text-gray-400 font-mono-code leading-relaxed">
-          These operations permanently clear submission history and leaderboard standings. Use them to wipe testing data before starting your live event.
+          Permanently delete submission data and reset scores. Use this to clear test data before starting.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
@@ -324,10 +324,10 @@ export default function AdminSettingsPage() {
             <div>
               <h3 className="font-bold font-mono-code text-sm text-white flex items-center gap-2">
                 <RotateCcw className="w-4 h-4 text-amber-400" />
-                <span>Reset Solves & Submissions</span>
+                <span>Reset Solves & Scores</span>
               </h3>
               <p className="text-xs text-gray-400 font-mono-code mt-1 leading-relaxed">
-                Purges all solves, resets leaderboard scores to 0, and restores dynamic challenge point values to max. Keeps user accounts and custom challenges.
+                Clears all solves, resets scores to 0, and restores challenge points to maximum. Keeps player accounts and challenges.
               </p>
             </div>
             <button
@@ -335,7 +335,7 @@ export default function AdminSettingsPage() {
               disabled={resetting}
               className="w-full py-2 px-3 rounded border border-amber-500/40 bg-amber-950/20 hover:bg-amber-900/40 text-amber-400 hover:text-amber-300 text-xs font-mono-code font-bold uppercase transition-all disabled:opacity-50"
             >
-              {resetting ? 'PURGING SOLVES...' : 'WIPE SOLVES & AUDIT LOGS'}
+              {resetting ? 'RESETTING...' : 'RESET SOLVES & SCORES'}
             </button>
           </div>
 
@@ -344,10 +344,10 @@ export default function AdminSettingsPage() {
             <div>
               <h3 className="font-bold font-mono-code text-sm text-white flex items-center gap-2">
                 <Trash2 className="w-4 h-4 text-red-400" />
-                <span>Full Factory Reset</span>
+                <span>Full Reset</span>
               </h3>
               <p className="text-xs text-gray-400 font-mono-code mt-1 leading-relaxed">
-                Wipes all solves, submissions, non-admin player accounts, and custom challenges. Re-seeds default starter categories and challenges.
+                Deletes all solves, submissions, player accounts, and custom challenges. Restores default starter categories and challenges.
               </p>
             </div>
             <button
@@ -355,7 +355,7 @@ export default function AdminSettingsPage() {
               disabled={resetting}
               className="w-full py-2 px-3 rounded bg-red-600 hover:bg-red-500 text-white text-xs font-mono-code font-bold uppercase transition-all disabled:opacity-50 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
             >
-              {resetting ? 'EXECUTING FACTORY RESET...' : 'FULL FACTORY RESET'}
+              {resetting ? 'RESETTING...' : 'FULL RESET'}
             </button>
           </div>
         </div>

@@ -139,10 +139,10 @@ export default function AdminCategoriesPage() {
       <div>
         <h1 className="text-2xl font-bold font-mono-code text-white flex items-center gap-2.5">
           <FolderTree className="w-6 h-6 text-[#00ff41]" />
-          CATEGORY DIRECTORY
+          CATEGORIES
         </h1>
         <p className="text-xs text-gray-400 font-mono-code mt-1">
-          Create, color-code, and organize challenge categories and display hierarchies.
+          Manage challenge categories, colors, and display order.
         </p>
       </div>
 
@@ -170,14 +170,14 @@ export default function AdminCategoriesPage() {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Binary Exploitation"
+              placeholder="e.g., Web"
               className="w-full px-3.5 py-2 rounded bg-[#13241d] border border-[#1a3026] text-sm text-white font-mono-code placeholder-gray-600 focus:outline-none focus:border-[#00ff41]"
             />
           </div>
 
           <div>
             <label className="block text-xs font-mono-code text-gray-400 mb-1 uppercase">
-              Color Accent
+              Color
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -218,24 +218,24 @@ export default function AdminCategoriesPage() {
           <table className="w-full text-left text-sm font-mono-code">
             <thead className="bg-[#080d0b] text-xs uppercase text-gray-400 border-b border-[#1a3026]">
               <tr>
-                <th className="py-3 px-4">Color Badge</th>
+                <th className="py-3 px-4">Color</th>
                 <th className="py-3 px-4">Name</th>
                 <th className="py-3 px-4 text-center">Challenges</th>
-                <th className="py-3 px-4 text-center">Display Order</th>
+                <th className="py-3 px-4 text-center">Order</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1a3026]">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-gray-500 animate-pulse">
-                    LOADING CATEGORIES...
+                  <td colSpan={5} className="py-12 text-center text-gray-500">
+                    Loading categories...
                   </td>
                 </tr>
               ) : categories.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-gray-500">
-                    NO CATEGORIES DEFINED
+                    No categories found
                   </td>
                 </tr>
               ) : (

@@ -83,10 +83,10 @@ export default function AdminChallengesPage() {
         <div>
           <h1 className="text-2xl font-bold font-mono-code text-white flex items-center gap-2.5">
             <Shield className="w-6 h-6 text-[#00ff41]" />
-            CHALLENGE INVENTORY
+            CHALLENGES
           </h1>
           <p className="text-xs text-gray-400 font-mono-code">
-            Create, calibrate dynamic scoring, inspect flags, and manage challenge visibility.
+            Manage challenges, flags, and visibility.
           </p>
         </div>
 
@@ -118,14 +118,14 @@ export default function AdminChallengesPage() {
             <tbody className="divide-y divide-[#1a3026]">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-500 animate-pulse">
-                    LOADING CHALLENGES...
+                  <td colSpan={8} className="py-12 text-center text-gray-500">
+                    Loading challenges...
                   </td>
                 </tr>
               ) : challenges.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-gray-500">
-                    NO CHALLENGES CREATED YET
+                    No challenges found
                   </td>
                 </tr>
               ) : (

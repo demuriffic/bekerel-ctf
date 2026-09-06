@@ -29,7 +29,7 @@ export default async function AdminLayout({
     { href: '/admin/challenges', label: 'Challenges', icon: Shield },
     { href: '/admin/categories', label: 'Categories', icon: FolderTree },
     { href: '/admin/players', label: 'Players', icon: Users },
-    { href: '/admin/submissions', label: 'Audit Logs', icon: ScrollText },
+    { href: '/admin/submissions', label: 'Submissions', icon: ScrollText },
     { href: '/admin/settings', label: 'CTF Settings', icon: Settings },
     { href: '/admin/export', label: 'Data Export', icon: Download },
   ];
@@ -45,10 +45,10 @@ export default async function AdminLayout({
             </div>
             <div>
               <h2 className="text-xl font-bold font-mono-code text-white">
-                ADMIN CONTROL CENTER
+                ADMIN PANEL
               </h2>
               <p className="text-xs text-amber-400/80 font-mono-code">
-                ROOT_ACCESS_GRANTED // PLATFORM MANAGEMENT // {admin.username}
+                Logged in as {admin.username}
               </p>
             </div>
           </div>

@@ -91,10 +91,10 @@ export default function NewChallengePage() {
         <div>
           <h1 className="text-xl font-bold font-mono-code text-white flex items-center gap-2">
             <PlusCircle className="w-5 h-5 text-[#00ff41]" />
-            DEPLOY NEW CHALLENGE
+            CREATE CHALLENGE
           </h1>
           <p className="text-xs text-gray-400 font-mono-code mt-1">
-            Configure challenge parameters, assign vector category, and calibrate scoring decay.
+            Set challenge details, category, and dynamic scoring.
           </p>
         </div>
 
@@ -142,7 +142,7 @@ export default function NewChallengePage() {
 
           <div>
             <label className="block text-xs font-mono-code text-gray-400 mb-1.5 uppercase">
-              Static Flag (Exact string match)
+              Flag
             </label>
             <input
               type="text"
@@ -157,7 +157,7 @@ export default function NewChallengePage() {
           {/* Dynamic scoring calibration */}
           <div className="p-4 rounded border border-[#1a3026] bg-[#080d0b] space-y-4">
             <div className="text-xs font-mono-code font-bold uppercase text-[#00ff41]">
-              Dynamic Scoring Curve Settings
+              Dynamic Scoring Settings
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
@@ -190,7 +190,7 @@ export default function NewChallengePage() {
 
               <div>
                 <label className="block text-xs font-mono-code text-gray-400 mb-1">
-                  Decay Factor (Rate)
+                  Decay Factor
                 </label>
                 <input
                   type="number"
@@ -217,20 +217,20 @@ export default function NewChallengePage() {
                 onChange={(e) => setStatus(e.target.value as any)}
                 className="w-full px-3.5 py-2.5 rounded bg-[#13241d] border border-[#1a3026] text-sm text-white focus:outline-none focus:border-[#00ff41] font-mono-code"
               >
-                <option value="published">Published (Visible to competitors)</option>
-                <option value="draft">Draft (Hidden from competitors)</option>
+                <option value="published">Published (Visible to players)</option>
+                <option value="draft">Draft (Hidden from players)</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-mono-code text-gray-400 mb-1.5 uppercase">
-                External Attachment Link (Optional)
+                Attachment URL (Optional)
               </label>
               <input
                 type="url"
                 value={attachmentUrl}
                 onChange={(e) => setAttachmentUrl(e.target.value)}
-                placeholder="https://drive.google.com/... or https://github.com/..."
+                placeholder="https://example.com/file.zip"
                 className="w-full px-3.5 py-2.5 rounded bg-[#13241d] border border-[#1a3026] text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#00ff41] font-mono-code"
               />
             </div>
@@ -240,7 +240,7 @@ export default function NewChallengePage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-mono-code text-gray-400 uppercase">
-                Challenge Briefing (Markdown Supported)
+                Description (Markdown Supported)
               </label>
               <div className="flex gap-1 border border-[#1a3026] rounded p-0.5 bg-[#080d0b]">
                 <button
@@ -270,7 +270,7 @@ export default function NewChallengePage() {
                 rows={8}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Provide challenge background, hints, host/port info, or download links..."
+                placeholder="Provide challenge details, hints, or connection info..."
                 className="w-full px-3.5 py-2.5 rounded bg-[#13241d] border border-[#1a3026] text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#00ff41] font-mono-code leading-relaxed"
               />
             ) : (
@@ -286,7 +286,7 @@ export default function NewChallengePage() {
             disabled={submitting}
             className="w-full py-3 px-4 rounded bg-[#00ff41] hover:bg-[#00e63a] text-[#041409] font-bold text-sm font-mono-code uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(0,255,65,0.25)] hover:shadow-[0_0_20px_rgba(0,255,65,0.4)] disabled:opacity-50"
           >
-            {submitting ? 'DEPLOYING TO ARENA...' : 'PUBLISH CHALLENGE'}
+            {submitting ? 'CREATING...' : 'CREATE CHALLENGE'}
           </button>
         </form>
       </div>

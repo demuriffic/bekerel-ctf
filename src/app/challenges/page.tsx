@@ -62,16 +62,16 @@ export default function ChallengesPage() {
         <div>
           <h1 className="text-3xl font-bold font-mono-code text-white flex items-center gap-3">
             <Shield className="w-8 h-8 text-[#00ff41]" />
-            CHALLENGE ARENA
+            CHALLENGES
           </h1>
           <p className="text-sm text-gray-400 mt-1 font-mono-code">
-            Select a target, bypass defenses, capture the flag. Dynamic point values decay with each solve.
+            Solve challenges to earn points. Points dynamically decay as more players solve them.
           </p>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="px-4 py-2 rounded bg-[#0d1613] border border-[#1a3026] flex items-center gap-3">
-            <div className="text-xs font-mono-code text-gray-400">YOUR SOLVES:</div>
+            <div className="text-xs font-mono-code text-gray-400">Solved:</div>
             <div className="text-lg font-bold font-mono-code text-[#00ff41]">
               {totalSolves} / {challenges.length}
             </div>
@@ -84,7 +84,7 @@ export default function ChallengesPage() {
         <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/40 flex items-center gap-3 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
           <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-400 animate-pulse" />
           <div className="text-sm font-mono-code">
-            <span className="font-bold tracking-wider">COMPETITION PAUSED:</span> Flag submissions are temporarily locked by administrators. You can still inspect challenge details and materials.
+            <span className="font-bold">Competition Paused:</span> Flag submissions are temporarily disabled.
           </div>
         </div>
       )}
@@ -93,7 +93,7 @@ export default function ChallengesPage() {
       <div className="flex flex-wrap gap-2 items-center">
         <div className="flex items-center gap-1.5 text-xs text-gray-500 font-mono-code mr-2">
           <Filter className="w-3.5 h-3.5" />
-          <span>VECTORS:</span>
+          <span>Categories:</span>
         </div>
         <button
           onClick={() => setSelectedCategory('all')}
@@ -129,12 +129,12 @@ export default function ChallengesPage() {
 
       {/* Challenges Grid */}
       {loading ? (
-        <div className="text-center py-20 font-mono-code text-gray-500 animate-pulse">
-          SCANNING CHALLENGE VECTORS...
+        <div className="text-center py-20 font-mono-code text-gray-500">
+          Loading challenges...
         </div>
       ) : filteredChallenges.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-[#1a3026] rounded-lg p-12 text-gray-500 font-mono-code">
-          NO CHALLENGES AVAILABLE IN THIS VECTOR
+          No challenges in this category.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -175,7 +175,7 @@ export default function ChallengesPage() {
                     {ch.isSolved ? (
                       <span className="flex items-center gap-1 text-xs text-[#00ff41] font-mono-code">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Completed</span>
+                        <span>Solved</span>
                       </span>
                     ) : (
                       <span className="text-[11px] text-gray-500 font-mono-code flex items-center gap-1">
@@ -203,7 +203,7 @@ export default function ChallengesPage() {
                   </div>
 
                   <span className="text-xs font-mono-code text-gray-400 group-hover:text-white flex items-center gap-1">
-                    <span>Infiltrate</span>
+                    <span>View</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </span>
                 </div>

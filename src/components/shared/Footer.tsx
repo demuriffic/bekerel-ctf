@@ -12,10 +12,10 @@ export default function Footer({ ctfName, ctfDescription }: { ctfName: string; c
         </div>
         <div className="flex items-center gap-4 text-gray-500">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#00ff41] animate-pulse"></span>
-            SYSTEM OPERATIONAL
+            <span className="w-2 h-2 rounded-full bg-[#00ff41]"></span>
+            System Online
           </span>
-          <span>// ALL RIGHTS RESERVED</span>
+          <span>• All rights reserved</span>
         </div>
       </div>
     </footer>

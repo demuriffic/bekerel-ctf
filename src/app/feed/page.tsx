@@ -50,10 +50,10 @@ export default function FeedPage() {
         <div>
           <h1 className="text-3xl font-bold font-mono-code text-white flex items-center gap-3">
             <Activity className="w-8 h-8 text-[#00ff41]" />
-            SOLVES TRANSMISSION FEED
+            SOLVE FEED
           </h1>
           <p className="text-sm text-gray-400 mt-1 font-mono-code">
-            Live telemetry of system infiltrations and flag captures across the grid.
+            Live stream of challenge solves.
           </p>
         </div>
 
@@ -63,20 +63,20 @@ export default function FeedPage() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded border border-[#1a3026] bg-[#0d1613] hover:bg-[#13241d] hover:border-[#00ff41]/40 text-xs font-mono-code text-gray-300 hover:text-white transition-all self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-[#00ff41]' : ''}`} />
-          <span>REFRESH FEED</span>
+          <span>Refresh</span>
         </button>
       </div>
 
       {/* Feed List */}
       <div className="space-y-3">
         {loading ? (
-          <div className="p-12 text-center font-mono-code text-gray-500 animate-pulse">
-            INTERCEPTING TELEMETRY PACKETS...
+          <div className="p-12 text-center font-mono-code text-gray-500">
+            Loading activity...
           </div>
         ) : feed.length === 0 ? (
           <div className="p-12 border border-dashed border-[#1a3026] rounded-lg text-center font-mono-code text-gray-500 space-y-2">
-            <div>NO INFILTRATIONS DETECTED YET</div>
-            <p className="text-xs text-gray-600">Be the first operator to solve a challenge!</p>
+            <div>No solves yet</div>
+            <p className="text-xs text-gray-600">Be the first to solve a challenge!</p>
           </div>
         ) : (
           feed.map((item) => (
@@ -107,7 +107,7 @@ export default function FeedPage() {
                     >
                       {item.username}
                     </Link>
-                    <span className="text-xs text-gray-500 font-mono-code">captured</span>
+                    <span className="text-xs text-gray-500 font-mono-code">solved</span>
                     <Link
                       href={`/challenges/${item.challengeId}`}
                       className="font-bold font-mono-code text-[#00ff41] hover:underline"

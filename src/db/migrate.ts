@@ -80,7 +80,11 @@ export async function initDb() {
             .map((s) => s.trim())
             .filter((s) => s.length > 0);
           for (const statement of statements) {
-            await sql(statement);
+            if (typeof sql.query === 'function') {
+              await sql.query(statement);
+            } else {
+              await sql(statement);
+            }
           }
         } else {
           const { PGlite } = require('@electric-sql/pglite');

@@ -96,8 +96,8 @@ export default function AdminSettingsPage() {
   const handleTogglePause = async () => {
     const nextPaused = !isPaused;
     const confirmMsg = nextPaused
-      ? 'Are you sure you want to PAUSE the CTF? All flag submissions will be locked immediately for participants.'
-      : 'Resume the CTF competition? Submissions will be re-opened for participants.';
+      ? 'Are you sure you want to PAUSE the CTF? Challenges will be hidden and flag submissions locked for regular participants.'
+      : 'Resume the CTF competition? Challenges and submissions will be re-opened for participants.';
 
     if (!confirm(confirmMsg)) return;
 
@@ -210,8 +210,8 @@ export default function AdminSettingsPage() {
           </div>
           <p className="text-xs text-gray-400 font-mono-code">
             {isPaused
-              ? 'Submissions are paused. Players cannot submit flags.'
-              : 'Submissions are active.'}
+              ? 'The competition is paused. Challenges and flag submissions are blocked for regular participants.'
+              : 'Submissions and challenges are live for all participants.'}
           </p>
         </div>
 

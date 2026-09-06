@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { db, ctfSettings } from '@/db';
 import { eq } from 'drizzle-orm';
 import { requireAdmin } from '@/lib/auth';
 import { initDb } from '@/db/migrate';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -63,14 +66,29 @@ export async function PUT(req: Request) {
       .where(eq(ctfSettings.id, 1))
       .returning();
 
-    return NextResponse.json({
-      success: true,
-      settings: {
-        startTime: updated?.startTime ? updated.startTime.toISOString() : null,
-        endTime: updated?.endTime ? updated.endTime.toISOString() : null,
-        isPaused: Boolean(updated?.isPaused),
+    try {
+      revalidatePath('/', 'page');
+      revalidatePath('/challenges', 'page');
+      revalidatePath('/scoreboard', 'page');
+    } catch (e) {
+      // Ignore revalidate error in test/dev environments
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        settings: {
+          startTime: updated?.startTime ? updated.startTime.toISOString() : null,
+          endTime: updated?.endTime ? updated.endTime.toISOString() : null,
+          isPaused: Boolean(updated?.isPaused),
+        },
       },
-    });
+      {
+        headers: {
+          'Cache-Control': 'no-store, max-age=0, must-revalidate',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Update settings error:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });

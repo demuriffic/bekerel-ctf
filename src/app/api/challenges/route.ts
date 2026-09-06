@@ -6,10 +6,13 @@ import { calculateDynamicPoints } from '@/lib/scoring';
 import { getCtfStatus } from '@/lib/ctf';
 import { initDb } from '@/db/migrate';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     await initDb();
     const session = await getSession();
+    const isAdmin = Boolean(session && session.role === 'admin');
 
     // Fetch CTF status, categories, challenges, and solves in parallel
     const [ctfStatus, allCategories, allChallenges, allSolves] = await Promise.all([
@@ -19,8 +22,26 @@ export async function GET() {
       db.select().from(solves),
     ]);
 
+    // If CTF is paused and user is not admin, completely block challenge visibility
+    if (ctfStatus.isPaused && !isAdmin) {
+      return NextResponse.json(
+        {
+          categories: allCategories,
+          challenges: [],
+          isPaused: true,
+          isAdmin: false,
+          message: 'The competition is currently paused.',
+        },
+        {
+          headers: {
+            'Cache-Control': 'no-store, max-age=0, must-revalidate',
+          },
+        }
+      );
+    }
+
     const visibleChallenges = allChallenges.filter(
-      (c) => c.status === 'published' || (session && session.role === 'admin')
+      (c) => c.status === 'published' || isAdmin
     );
 
     const solvesByChallenge = new Map<string, number>();
@@ -59,10 +80,11 @@ export async function GET() {
         categories: allCategories,
         challenges: formattedChallenges,
         isPaused: ctfStatus.isPaused,
+        isAdmin,
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=3, stale-while-revalidate=15',
+          'Cache-Control': 'no-store, max-age=0, must-revalidate',
         },
       }
     );

@@ -15,6 +15,7 @@ import {
   Clock,
   Sparkles,
   ExternalLink,
+  PauseCircle,
 } from 'lucide-react';
 
 interface ChallengeDetail {
@@ -44,6 +45,8 @@ export default function ChallengeDetailPage({
 
   const [challenge, setChallenge] = useState<ChallengeDetail | null>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [flag, setFlag] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -55,13 +58,21 @@ export default function ChallengeDetailPage({
 
   const fetchChallenge = () => {
     fetch(`/api/challenges/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load challenge');
-        return res.json();
-      })
-      .then((data) => {
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          if (res.status === 403 && data.isPaused) {
+            setIsPaused(true);
+            setIsBlocked(true);
+            setIsAdmin(Boolean(data.isAdmin));
+            setLoading(false);
+            return;
+          }
+          throw new Error(data.error || 'Failed to load challenge');
+        }
         setChallenge(data.challenge);
         setIsPaused(Boolean(data.isPaused));
+        setIsAdmin(Boolean(data.isAdmin));
         setLoading(false);
       })
       .catch((err) => {
@@ -126,6 +137,37 @@ export default function ChallengeDetailPage({
     return (
       <div className="max-w-4xl mx-auto w-full px-4 py-20 text-center font-mono-code text-gray-500">
         Loading challenge...
+      </div>
+    );
+  }
+
+  if (isBlocked || (isPaused && !isAdmin)) {
+    return (
+      <div className="max-w-xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-20 text-center space-y-6">
+        <div className="p-8 sm:p-12 rounded-xl border border-amber-500/30 bg-[#0d1613] text-center space-y-6 shadow-[0_0_30px_rgba(245,158,11,0.1)]">
+          <div className="inline-flex p-4 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+            <PauseCircle className="w-12 h-12 animate-pulse" />
+          </div>
+
+          <div className="space-y-3">
+            <h1 className="text-2xl font-bold font-mono-code text-white">
+              COMPETITION PAUSED
+            </h1>
+            <p className="text-sm text-gray-400 font-mono-code">
+              Challenges cannot be viewed or submitted while the competition is paused.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <Link
+              href="/challenges"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-[#13241d] border border-[#1a3026] text-sm text-[#00ff41] hover:border-[#00ff41]/50 font-mono-code transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Challenges</span>
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -234,7 +276,7 @@ export default function ChallengeDetailPage({
             <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/40 flex items-center gap-3 text-sm text-amber-400 font-mono-code shadow-[0_0_15px_rgba(245,158,11,0.15)]">
               <AlertCircle className="w-5 h-5 shrink-0 text-amber-400 animate-pulse" />
               <div>
-                <span className="font-bold">Competition Paused:</span> Flag submissions are temporarily disabled.
+                <span className="font-bold">Competition Paused:</span> Submissions are disabled. Non-admin players cannot see this challenge.
               </div>
             </div>
           )}
@@ -264,7 +306,7 @@ export default function ChallengeDetailPage({
                   disabled={isPaused}
                   value={flag}
                   onChange={(e) => setFlag(e.target.value)}
-                  placeholder={isPaused ? "Submissions paused..." : "flag{...}"}
+                  placeholder={isPaused ? "Submissions paused (Admin Preview)" : "flag{...}"}
                   className="flex-1 px-4 py-2.5 rounded bg-[#13241d] border border-[#1a3026] text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#00ff41] focus:ring-1 focus:ring-[#00ff41] font-mono-code transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button

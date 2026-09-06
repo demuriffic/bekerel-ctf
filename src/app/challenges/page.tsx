@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Shield, CheckCircle2, Flame, ExternalLink, Filter, Target, AlertTriangle } from 'lucide-react';
+import { Shield, CheckCircle2, Flame, ExternalLink, Filter, Target, AlertTriangle, PauseCircle } from 'lucide-react';
 
 interface Challenge {
   id: string;
@@ -29,6 +29,7 @@ export default function ChallengesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isPaused, setIsPaused] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function ChallengesPage() {
         setChallenges(data.challenges || []);
         setCategories(data.categories || []);
         setIsPaused(Boolean(data.isPaused));
+        setIsAdmin(Boolean(data.isAdmin));
         setLoading(false);
       })
       .catch((err) => {
@@ -54,6 +56,51 @@ export default function ChallengesPage() {
   const categoryMap = new Map(categories.map((c) => [c.id, c]));
 
   const totalSolves = challenges.filter((c) => c.isSolved).length;
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-20 text-center font-mono-code text-gray-500">
+        Loading challenges...
+      </div>
+    );
+  }
+
+  // Non-admins cannot see any challenges when paused
+  if (isPaused && !isAdmin) {
+    return (
+      <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16">
+        <div className="p-8 sm:p-12 rounded-xl border border-amber-500/30 bg-[#0d1613] text-center space-y-6 shadow-[0_0_30px_rgba(245,158,11,0.1)]">
+          <div className="inline-flex p-4 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+            <PauseCircle className="w-12 h-12 animate-pulse" />
+          </div>
+
+          <div className="space-y-3">
+            <h1 className="text-3xl font-bold font-mono-code text-white">
+              COMPETITION PAUSED
+            </h1>
+            <p className="text-base text-gray-400 font-mono-code max-w-lg mx-auto">
+              Challenges are temporarily unavailable while the competition is paused. Please check back shortly.
+            </p>
+          </div>
+
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href="/scoreboard"
+              className="px-5 py-2.5 rounded border border-[#1a3026] bg-[#13241d] hover:bg-[#1a3026] hover:border-[#00ff41]/50 text-white text-sm font-mono-code transition-all"
+            >
+              View Scoreboard
+            </Link>
+            <Link
+              href="/"
+              className="px-5 py-2.5 rounded bg-[#00ff41] hover:bg-[#00e63a] text-[#041409] font-bold text-sm font-mono-code transition-all"
+            >
+              Return to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -79,13 +126,21 @@ export default function ChallengesPage() {
         </div>
       </div>
 
-      {/* Paused Banner */}
-      {isPaused && (
-        <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/40 flex items-center gap-3 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
-          <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-400 animate-pulse" />
-          <div className="text-sm font-mono-code">
-            <span className="font-bold">Competition Paused:</span> Flag submissions are temporarily disabled.
+      {/* Admin Paused Banner */}
+      {isPaused && isAdmin && (
+        <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-400 animate-pulse" />
+            <div className="text-sm font-mono-code">
+              <span className="font-bold">Competition Paused:</span> Non-admin players cannot see challenges. As an admin, you have full preview access.
+            </div>
           </div>
+          <Link
+            href="/admin/settings"
+            className="text-xs font-mono-code underline hover:text-amber-300 whitespace-nowrap"
+          >
+            Manage in Settings &rarr;
+          </Link>
         </div>
       )}
 
@@ -128,11 +183,7 @@ export default function ChallengesPage() {
       </div>
 
       {/* Challenges Grid */}
-      {loading ? (
-        <div className="text-center py-20 font-mono-code text-gray-500">
-          Loading challenges...
-        </div>
-      ) : filteredChallenges.length === 0 ? (
+      {filteredChallenges.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-[#1a3026] rounded-lg p-12 text-gray-500 font-mono-code">
           No challenges in this category.
         </div>

@@ -5,7 +5,9 @@ import { initDb } from '@/db/migrate';
 import { getCtfStatus } from '@/lib/ctf';
 import { CTF_CONFIG } from '@/lib/config';
 import { Terminal, Shield, Trophy, Activity, ArrowRight, Flag, Flame, Target, Cpu } from 'lucide-react';
+import HeroStatusBadge from '@/components/shared/HeroStatusBadge';
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function HomePage() {
@@ -41,34 +43,7 @@ export default async function HomePage() {
       <div className="max-w-5xl mx-auto w-full relative z-10 space-y-12">
         {/* Status Badge */}
         <div className="flex justify-center">
-          <div
-            className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-mono-code transition-all ${
-              ctfStatus.isPaused
-                ? 'border-amber-500/50 bg-amber-500/10 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-                : ctfStatus.isActive
-                ? 'border-[#00ff41]/30 bg-[#00ff41]/10 text-[#00ff41] shadow-[0_0_15px_rgba(0,255,65,0.15)]'
-                : 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400'
-            }`}
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${
-                ctfStatus.isPaused
-                  ? 'bg-amber-400 animate-ping'
-                  : ctfStatus.isActive
-                  ? 'bg-[#00ff41] animate-ping'
-                  : 'bg-cyan-400'
-              }`}
-            />
-            <span>
-              {ctfStatus.isPaused
-                ? 'COMPETITION PAUSED'
-                : ctfStatus.isActive
-                ? 'COMPETITION ACTIVE'
-                : ctfStatus.hasEnded
-                ? 'COMPETITION ENDED'
-                : 'STARTING SOON'}
-            </span>
-          </div>
+          <HeroStatusBadge initialStatus={ctfStatus} />
         </div>
 
         {/* Hero title */}

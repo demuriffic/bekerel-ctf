@@ -6,6 +6,8 @@ import { getCtfStatus } from '@/lib/ctf';
 import { calculateDynamicPoints } from '@/lib/scoring';
 import { initDb } from '@/db/migrate';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -14,17 +16,31 @@ export async function GET(
     await initDb();
     const { id } = await params;
     const session = await getSession();
+    const isAdmin = Boolean(session && session.role === 'admin');
 
     const [challenge, ctfStatus] = await Promise.all([
       db.select().from(challenges).where(eq(challenges.id, id)).limit(1).then((r) => r[0]),
       getCtfStatus(),
     ]);
 
+    // If CTF is paused and user is not admin, completely block challenge access
+    if (ctfStatus.isPaused && !isAdmin) {
+      return NextResponse.json(
+        { error: 'The competition is currently paused.', isPaused: true, isAdmin: false },
+        {
+          status: 403,
+          headers: {
+            'Cache-Control': 'no-store, max-age=0, must-revalidate',
+          },
+        }
+      );
+    }
+
     if (!challenge) {
       return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
     }
 
-    if (challenge.status !== 'published' && (!session || session.role !== 'admin')) {
+    if (challenge.status !== 'published' && !isAdmin) {
       return NextResponse.json({ error: 'Challenge not available' }, { status: 404 });
     }
 
@@ -52,6 +68,7 @@ export async function GET(
     return NextResponse.json(
       {
         isPaused: ctfStatus.isPaused,
+        isAdmin,
         challenge: {
           id: challenge.id,
           title: challenge.title,
@@ -72,7 +89,7 @@ export async function GET(
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=3, stale-while-revalidate=15',
+          'Cache-Control': 'no-store, max-age=0, must-revalidate',
         },
       }
     );

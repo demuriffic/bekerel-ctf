@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS challenges (
   decay_factor INTEGER NOT NULL DEFAULT 50,
   status TEXT NOT NULL DEFAULT 'draft',
   attachment_url TEXT,
+  prerequisite_id UUID REFERENCES challenges(id) ON DELETE SET NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -43,10 +44,15 @@ CREATE TABLE IF NOT EXISTS solves (
   points_awarded INTEGER NOT NULL
 );
 
+ALTER TABLE challenges ADD COLUMN IF NOT EXISTS prerequisite_id UUID REFERENCES challenges(id) ON DELETE SET NULL;
+
 CREATE UNIQUE INDEX IF NOT EXISTS user_challenge_idx ON solves(user_id, challenge_id);
 CREATE INDEX IF NOT EXISTS solves_challenge_idx ON solves(challenge_id);
 CREATE INDEX IF NOT EXISTS solves_user_idx ON solves(user_id);
 CREATE INDEX IF NOT EXISTS challenges_cat_idx ON challenges(category_id);
+CREATE INDEX IF NOT EXISTS challenges_prereq_idx ON challenges(prerequisite_id);
+CREATE INDEX IF NOT EXISTS idx_solves_solved_at ON solves(solved_at);
+CREATE INDEX IF NOT EXISTS idx_submissions_submitted_at ON submissions(submitted_at);
 
 CREATE TABLE IF NOT EXISTS submissions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

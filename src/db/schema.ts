@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, uuid, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, uuid, uniqueIndex, index, type AnyPgColumn } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -31,11 +31,13 @@ export const challenges = pgTable(
     decayFactor: integer('decay_factor').notNull().default(50),
     status: text('status').notNull().default('draft'), // 'draft' | 'published'
     attachmentUrl: text('attachment_url'),
+    prerequisiteId: uuid('prerequisite_id').references((): AnyPgColumn => challenges.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
   (table) => [
     index('challenges_cat_idx').on(table.categoryId),
+    index('challenges_prereq_idx').on(table.prerequisiteId),
   ]
 );
 
@@ -52,6 +54,7 @@ export const solves = pgTable(
     uniqueIndex('user_challenge_idx').on(table.userId, table.challengeId),
     index('solves_challenge_idx').on(table.challengeId),
     index('solves_user_idx').on(table.userId),
+    index('solves_solved_at_idx').on(table.solvedAt),
   ]
 );
 
@@ -67,6 +70,7 @@ export const submissions = pgTable(
   },
   (table) => [
     index('submissions_user_chal_idx').on(table.userId, table.challengeId, table.submittedAt),
+    index('submissions_submitted_at_idx').on(table.submittedAt),
   ]
 );
 

@@ -1,49 +1,74 @@
 import { NextResponse } from 'next/server';
 import { db, solves, users, challenges, categories } from '@/db';
-import { desc, asc } from 'drizzle-orm';
+import { desc, eq, inArray, sql } from 'drizzle-orm';
 import { initDb } from '@/db/migrate';
 
 export async function GET() {
   try {
     await initDb();
 
-    // Fetch solves, users, challenges, and categories in parallel
-    const [allSolvesAsc, recentSolves, allUsers, allChallenges, allCategories] = await Promise.all([
-      db.select({ id: solves.id, challengeId: solves.challengeId }).from(solves).orderBy(asc(solves.solvedAt)),
-      db.select().from(solves).orderBy(desc(solves.solvedAt)).limit(50),
-      db.select({ id: users.id, username: users.username }).from(users),
-      db.select({ id: challenges.id, title: challenges.title, categoryId: challenges.categoryId }).from(challenges),
-      db.select().from(categories),
-    ]);
+    // Query latest 50 solves directly with JOINs
+    const recentSolves = await db
+      .select({
+        id: solves.id,
+        userId: solves.userId,
+        username: users.username,
+        challengeId: solves.challengeId,
+        challengeTitle: challenges.title,
+        categoryName: categories.name,
+        categoryColor: categories.color,
+        pointsAwarded: solves.pointsAwarded,
+        solvedAt: solves.solvedAt,
+      })
+      .from(solves)
+      .innerJoin(users, eq(users.id, solves.userId))
+      .innerJoin(challenges, eq(challenges.id, solves.challengeId))
+      .innerJoin(categories, eq(categories.id, challenges.categoryId))
+      .orderBy(desc(solves.solvedAt))
+      .limit(50);
 
-    const firstBloods = new Set<string>();
-    const seenChallenges = new Set<string>();
-
-    for (const s of allSolvesAsc) {
-      if (!seenChallenges.has(s.challengeId)) {
-        firstBloods.add(s.id);
-        seenChallenges.add(s.challengeId);
-      }
+    if (recentSolves.length === 0) {
+      return NextResponse.json(
+        { feed: [] },
+        {
+          headers: {
+            'Cache-Control': 'public, s-maxage=3, stale-while-revalidate=10',
+          },
+        }
+      );
     }
 
-    const userMap = new Map(allUsers.map((u) => [u.id, u.username]));
-    const challengeMap = new Map(allChallenges.map((c) => [c.id, c]));
-    const categoryMap = new Map(allCategories.map((c) => [c.id, c]));
+    // Determine first blood by querying the earliest solve timestamp for these challenges only
+    const challengeIds = Array.from(new Set(recentSolves.map((r) => r.challengeId)));
+    const firstSolves = await db
+      .select({
+        challengeId: solves.challengeId,
+        firstSolvedAt: sql<string>`min(${solves.solvedAt})`,
+      })
+      .from(solves)
+      .where(inArray(solves.challengeId, challengeIds))
+      .groupBy(solves.challengeId);
+
+    const firstTimeMap = new Map<string, number>();
+    for (const fs of firstSolves) {
+      firstTimeMap.set(fs.challengeId, new Date(fs.firstSolvedAt).getTime());
+    }
 
     const feed = recentSolves.map((s) => {
-      const challenge = challengeMap.get(s.challengeId);
-      const category = challenge ? categoryMap.get(challenge.categoryId) : null;
+      const solveTime = new Date(s.solvedAt).getTime();
+      const firstTime = firstTimeMap.get(s.challengeId);
+      const isFirstBlood = firstTime !== undefined && solveTime === firstTime;
 
       return {
         id: s.id,
-        username: userMap.get(s.userId) || 'Anonymous',
+        username: s.username,
         challengeId: s.challengeId,
-        challengeTitle: challenge?.title || 'Unknown Challenge',
-        categoryName: category?.name || 'General',
-        categoryColor: category?.color || '#00ff41',
+        challengeTitle: s.challengeTitle,
+        categoryName: s.categoryName,
+        categoryColor: s.categoryColor,
         pointsAwarded: s.pointsAwarded,
         solvedAt: s.solvedAt.toISOString(),
-        isFirstBlood: firstBloods.has(s.id),
+        isFirstBlood,
       };
     });
 

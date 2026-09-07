@@ -1,147 +1,39 @@
-'use client';
-
-import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { db, challenges, categories, solves } from '@/db';
+import { eq, and, sql } from 'drizzle-orm';
+import { getSession } from '@/lib/auth';
+import { getCtfStatus } from '@/lib/ctf';
+import { calculateDynamicPoints } from '@/lib/scoring';
 import { renderMarkdown } from '@/lib/markdown';
+import { initDb } from '@/db/migrate';
+import FlagSubmitForm from '@/components/FlagSubmitForm';
 import {
   ArrowLeft,
-  Shield,
   Flame,
   Download,
-  Send,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
-  Sparkles,
   ExternalLink,
   PauseCircle,
 } from 'lucide-react';
 
-interface ChallengeDetail {
-  id: string;
-  title: string;
-  description: string;
-  categoryId: string;
-  categoryName: string;
-  categoryColor: string;
-  currentPoints: number;
-  maxPoints: number;
-  minPoints: number;
-  decayFactor: number;
-  solveCount: number;
-  status: string;
-  attachmentUrl: string | null;
-  isSolved: boolean;
-}
+export const dynamic = 'force-dynamic';
 
-export default function ChallengeDetailPage({
+export default async function ChallengeDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
-  const router = useRouter();
+  await initDb();
+  const { id } = await params;
+  const session = await getSession();
+  const isAdmin = Boolean(session && session.role === 'admin');
 
-  const [challenge, setChallenge] = useState<ChallengeDetail | null>(null);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [flag, setFlag] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{
-    type: 'success' | 'error';
-    message: string;
-    pointsAwarded?: number;
-  } | null>(null);
+  const [challenge, ctfStatus] = await Promise.all([
+    db.select().from(challenges).where(eq(challenges.id, id)).limit(1).then((r) => r[0]),
+    getCtfStatus(),
+  ]);
 
-  const fetchChallenge = () => {
-    fetch(`/api/challenges/${id}`)
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) {
-          if (res.status === 403 && data.isPaused) {
-            setIsPaused(true);
-            setIsBlocked(true);
-            setIsAdmin(Boolean(data.isAdmin));
-            setLoading(false);
-            return;
-          }
-          throw new Error(data.error || 'Failed to load challenge');
-        }
-        setChallenge(data.challenge);
-        setIsPaused(Boolean(data.isPaused));
-        setIsAdmin(Boolean(data.isAdmin));
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
-  };
-
-  useEffect(() => {
-    fetchChallenge();
-  }, [id]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!flag.trim() || submitting) return;
-
-    setSubmitting(true);
-    setResult(null);
-
-    try {
-      const res = await fetch('/api/submissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challengeId: id, flag }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setResult({
-          type: 'error',
-          message: data.error || 'Submission failed',
-        });
-        return;
-      }
-
-      if (data.success) {
-        setResult({
-          type: 'success',
-          message: data.message,
-          pointsAwarded: data.pointsAwarded,
-        });
-        setFlag('');
-        fetchChallenge(); // Refresh challenge to show solved state
-      } else {
-        setResult({
-          type: 'error',
-          message: data.message || 'Incorrect flag. Try again!',
-        });
-      }
-    } catch (err: any) {
-      setResult({
-        type: 'error',
-        message: err.message || 'Error communicating with server',
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto w-full px-4 py-20 text-center font-mono-code text-gray-500">
-        Loading challenge...
-      </div>
-    );
-  }
-
-  if (isBlocked || (isPaused && !isAdmin)) {
+  // If CTF is paused and user is not admin, completely block challenge access
+  if (ctfStatus.isPaused && !isAdmin) {
     return (
       <div className="max-w-xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-20 text-center space-y-6">
         <div className="p-8 sm:p-12 rounded-xl border border-amber-500/30 bg-[#0d1613] text-center space-y-6 shadow-[0_0_30px_rgba(245,158,11,0.1)]">
@@ -187,8 +79,87 @@ export default function ChallengeDetailPage({
     );
   }
 
+  if (challenge.status !== 'published' && !isAdmin) {
+    return (
+      <div className="max-w-4xl mx-auto w-full px-4 py-20 text-center space-y-4">
+        <div className="text-red-400 font-mono-code">Challenge not available</div>
+        <Link
+          href="/challenges"
+          className="inline-flex items-center gap-2 text-sm text-[#00ff41] hover:underline font-mono-code"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Challenges</span>
+        </Link>
+      </div>
+    );
+  }
+
+  // Prerequisite check: If not admin, the challenge is hidden until prerequisite is solved
+  if (challenge.prerequisiteId && !isAdmin) {
+    if (!session) {
+      return (
+        <div className="max-w-4xl mx-auto w-full px-4 py-20 text-center space-y-4">
+          <div className="text-red-400 font-mono-code">Challenge not found</div>
+          <Link
+            href="/challenges"
+            className="inline-flex items-center gap-2 text-sm text-[#00ff41] hover:underline font-mono-code"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Challenges</span>
+          </Link>
+        </div>
+      );
+    }
+
+    const [prereqSolve] = await db
+      .select({ id: solves.id })
+      .from(solves)
+      .where(and(eq(solves.userId, session.id), eq(solves.challengeId, challenge.prerequisiteId)))
+      .limit(1);
+
+    if (!prereqSolve) {
+      return (
+        <div className="max-w-4xl mx-auto w-full px-4 py-20 text-center space-y-4">
+          <div className="text-red-400 font-mono-code">Challenge not found</div>
+          <Link
+            href="/challenges"
+            className="inline-flex items-center gap-2 text-sm text-[#00ff41] hover:underline font-mono-code"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Challenges</span>
+          </Link>
+        </div>
+      );
+    }
+  }
+
+  const [category, [solveCountRow], userSolve] = await Promise.all([
+    db.select().from(categories).where(eq(categories.id, challenge.categoryId)).limit(1).then((r) => r[0]),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(solves)
+      .where(eq(solves.challengeId, challenge.id)),
+    session
+      ? db
+          .select({ id: solves.id })
+          .from(solves)
+          .where(and(eq(solves.userId, session.id), eq(solves.challengeId, challenge.id)))
+          .limit(1)
+          .then((r) => r[0])
+      : Promise.resolve(null),
+  ]);
+
+  const solveCount = solveCountRow?.count || 0;
+  const currentPoints = calculateDynamicPoints(
+    challenge.maxPoints,
+    challenge.minPoints,
+    challenge.decayFactor,
+    solveCount
+  );
+
   const renderedDescription = renderMarkdown(challenge.description || '');
   const isSafeAttachmentUrl = challenge.attachmentUrl && /^https?:\/\//i.test(challenge.attachmentUrl);
+  const isSolved = Boolean(userSolve);
 
   return (
     <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -210,17 +181,16 @@ export default function ChallengeDetailPage({
               <span
                 className="px-2.5 py-0.5 rounded text-xs font-mono-code font-semibold border"
                 style={{
-                  borderColor: `${challenge.categoryColor}50`,
-                  backgroundColor: `${challenge.categoryColor}15`,
-                  color: challenge.categoryColor,
+                  borderColor: `${category?.color || '#00ff41'}50`,
+                  backgroundColor: `${category?.color || '#00ff41'}15`,
+                  color: category?.color || '#00ff41',
                 }}
               >
-                {challenge.categoryName}
+                {category?.name || 'General'}
               </span>
 
-              {challenge.isSolved && (
+              {isSolved && (
                 <span className="px-2.5 py-0.5 rounded text-xs font-mono-code font-semibold bg-[#00ff41]/20 border border-[#00ff41]/40 text-[#00ff41] flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>SOLVED</span>
                 </span>
               )}
@@ -233,12 +203,12 @@ export default function ChallengeDetailPage({
 
           <div className="flex sm:flex-col items-end sm:items-end justify-between sm:justify-center gap-1 border-t sm:border-t-0 border-[#1a3026] pt-3 sm:pt-0">
             <div className="text-3xl font-extrabold font-mono-code text-[#00ff41]">
-              {challenge.currentPoints}{' '}
+              {currentPoints}{' '}
               <span className="text-xs text-gray-400 font-normal">PTS</span>
             </div>
             <div className="text-xs font-mono-code text-gray-500 flex items-center gap-1.5">
               <Flame className="w-3.5 h-3.5 text-amber-500" />
-              <span>{challenge.solveCount} {challenge.solveCount === 1 ? 'solve' : 'solves'}</span>
+              <span>{solveCount} {solveCount === 1 ? 'solve' : 'solves'}</span>
             </div>
           </div>
         </div>
@@ -270,75 +240,12 @@ export default function ChallengeDetailPage({
           </div>
         )}
 
-        {/* Flag Submission Area */}
-        <div className="border-t border-[#1a3026] pt-6 space-y-4">
-          {isPaused && (
-            <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/40 flex items-center gap-3 text-sm text-amber-400 font-mono-code shadow-[0_0_15px_rgba(245,158,11,0.15)]">
-              <AlertCircle className="w-5 h-5 shrink-0 text-amber-400 animate-pulse" />
-              <div>
-                <span className="font-bold">Competition Paused:</span> Submissions are disabled. Non-admin players cannot see this challenge.
-              </div>
-            </div>
-          )}
-
-          {challenge.isSolved ? (
-            <div className="p-4 rounded-lg bg-[#00ff41]/10 border border-[#00ff41]/40 flex items-center gap-3 text-sm text-[#00ff41] font-mono-code shadow-[0_0_15px_rgba(0,255,65,0.15)]">
-              <CheckCircle2 className="w-5 h-5 text-[#00ff41] shrink-0" />
-              <div>
-                <span className="font-bold">Challenge Solved!</span>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-mono-code text-gray-400 uppercase">
-                  Submit Flag
-                </label>
-                <span className="text-[11px] font-mono-code text-gray-500">
-                  Rate limit: 10 attempts / min
-                </span>
-              </div>
-
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  required
-                  disabled={isPaused}
-                  value={flag}
-                  onChange={(e) => setFlag(e.target.value)}
-                  placeholder={isPaused ? "Submissions paused (Admin Preview)" : "flag{...}"}
-                  className="flex-1 px-4 py-2.5 rounded bg-[#13241d] border border-[#1a3026] text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#00ff41] focus:ring-1 focus:ring-[#00ff41] font-mono-code transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                <button
-                  type="submit"
-                  disabled={submitting || !flag.trim() || isPaused}
-                  className="px-6 py-2.5 rounded bg-[#00ff41] hover:bg-[#00e63a] text-[#041409] font-bold text-sm font-mono-code uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(0,255,65,0.2)] hover:shadow-[0_0_20px_rgba(0,255,65,0.35)] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>{isPaused ? 'PAUSED' : submitting ? 'SUBMITTING...' : 'SUBMIT'}</span>
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Submission Result Notification */}
-          {result && (
-            <div
-              className={`p-4 rounded border text-xs font-mono-code flex items-start gap-2.5 ${
-                result.type === 'success'
-                  ? 'bg-[#00ff41]/10 border-[#00ff41]/40 text-[#00ff41] shadow-[0_0_15px_rgba(0,255,65,0.2)]'
-                  : 'bg-red-950/40 border-red-500/40 text-red-300'
-              }`}
-            >
-              {result.type === 'success' ? (
-                <Sparkles className="w-4 h-4 text-[#00ff41] shrink-0 mt-0.5" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-              )}
-              <div>{result.message}</div>
-            </div>
-          )}
-        </div>
+        {/* Flag Submission Area (Island) */}
+        <FlagSubmitForm
+          challengeId={challenge.id}
+          isSolved={isSolved}
+          isPaused={ctfStatus.isPaused}
+        />
       </div>
     </div>
   );

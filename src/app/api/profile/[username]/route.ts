@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db, users, solves, challenges, categories } from '@/db';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { initDb } from '@/db/migrate';
 
 export async function GET(
@@ -16,68 +16,83 @@ export async function GET(
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
     }
 
-    // Get all competitors (players only, excluding admins) to compute rank
-    const allCompetitors = await db
-      .select()
-      .from(users)
-      .where(and(eq(users.banned, false), eq(users.role, 'player')));
-    const allSolves = await db.select().from(solves);
-
-    const scores = new Map<string, number>();
-    for (const s of allSolves) {
-      scores.set(s.userId, (scores.get(s.userId) || 0) + s.pointsAwarded);
-    }
-
-    const sortedCompetitors = allCompetitors
-      .map((u) => ({ id: u.id, score: scores.get(u.id) || 0 }))
-      .sort((a, b) => b.score - a.score);
-
-    const rankIndex = sortedCompetitors.findIndex((u) => u.id === user.id);
-    const rank = user.role === 'admin' ? 0 : rankIndex !== -1 ? rankIndex + 1 : sortedCompetitors.length + 1;
-
-    // Fetch user's solves with details
-    const userSolves = await db
-      .select()
+    // Fetch user's solves with challenge and category details joined in a single SQL query
+    const userDetailedSolves = await db
+      .select({
+        id: solves.id,
+        challengeId: solves.challengeId,
+        challengeTitle: challenges.title,
+        categoryId: categories.id,
+        categoryName: categories.name,
+        categoryColor: categories.color,
+        pointsAwarded: solves.pointsAwarded,
+        solvedAt: solves.solvedAt,
+      })
       .from(solves)
+      .innerJoin(challenges, eq(challenges.id, solves.challengeId))
+      .innerJoin(categories, eq(categories.id, challenges.categoryId))
       .where(eq(solves.userId, user.id))
       .orderBy(desc(solves.solvedAt));
 
-    const allChallenges = await db.select().from(challenges);
-    const allCategories = await db.select().from(categories);
+    const totalScore = userDetailedSolves.reduce((sum, s) => sum + s.pointsAwarded, 0);
 
-    const challengeMap = new Map(allChallenges.map((c) => [c.id, c]));
-    const categoryMap = new Map(allCategories.map((c) => [c.id, c]));
+    // Compute rank for players
+    let rank = 0;
+    if (user.role === 'player') {
+      const userLastSolve = userDetailedSolves.length > 0 ? userDetailedSolves[0].solvedAt : null;
 
-    // Category breakdown
-    const catStats = new Map<string, { name: string; color: string; count: number; points: number }>();
-    for (const cat of allCategories) {
-      catStats.set(cat.id, { name: cat.name, color: cat.color, count: 0, points: 0 });
-    }
+      const playerScores = await db
+        .select({
+          userId: users.id,
+          score: sql<number>`coalesce(sum(${solves.pointsAwarded}), 0)::int`,
+          lastSolve: sql<string | null>`max(${solves.solvedAt})`,
+        })
+        .from(users)
+        .leftJoin(solves, eq(solves.userId, users.id))
+        .where(and(eq(users.banned, false), eq(users.role, 'player')))
+        .groupBy(users.id);
 
-    const detailedSolves = userSolves.map((s) => {
-      const ch = challengeMap.get(s.challengeId);
-      const cat = ch ? categoryMap.get(ch.categoryId) : null;
-
-      if (cat) {
-        const cs = catStats.get(cat.id);
-        if (cs) {
-          cs.count += 1;
-          cs.points += s.pointsAwarded;
+      let higherCount = 0;
+      for (const p of playerScores) {
+        if (p.userId === user.id) continue;
+        if (p.score > totalScore) {
+          higherCount++;
+        } else if (p.score === totalScore) {
+          if (p.lastSolve && userLastSolve) {
+            if (new Date(p.lastSolve).getTime() < new Date(userLastSolve).getTime()) {
+              higherCount++;
+            }
+          } else if (p.lastSolve && !userLastSolve) {
+            higherCount++;
+          }
         }
       }
+      rank = higherCount + 1;
+    }
 
-      return {
-        id: s.id,
-        challengeId: s.challengeId,
-        challengeTitle: ch?.title || 'Unknown',
-        categoryName: cat?.name || 'General',
-        categoryColor: cat?.color || '#00ff41',
-        pointsAwarded: s.pointsAwarded,
-        solvedAt: s.solvedAt.toISOString(),
+    // Category breakdown derived directly from user's solves
+    const catStats = new Map<string, { name: string; color: string; count: number; points: number }>();
+    for (const s of userDetailedSolves) {
+      const existing = catStats.get(s.categoryId) || {
+        name: s.categoryName,
+        color: s.categoryColor,
+        count: 0,
+        points: 0,
       };
-    });
+      existing.count += 1;
+      existing.points += s.pointsAwarded;
+      catStats.set(s.categoryId, existing);
+    }
 
-    const totalScore = userSolves.reduce((sum, s) => sum + s.pointsAwarded, 0);
+    const formattedSolves = userDetailedSolves.map((s) => ({
+      id: s.id,
+      challengeId: s.challengeId,
+      challengeTitle: s.challengeTitle,
+      categoryName: s.categoryName,
+      categoryColor: s.categoryColor,
+      pointsAwarded: s.pointsAwarded,
+      solvedAt: s.solvedAt.toISOString(),
+    }));
 
     return NextResponse.json({
       player: {
@@ -87,10 +102,10 @@ export async function GET(
         createdAt: user.createdAt.toISOString(),
         rank,
         totalScore,
-        solvesCount: userSolves.length,
+        solvesCount: userDetailedSolves.length,
       },
-      categoryBreakdown: Array.from(catStats.values()).filter((c) => c.count > 0 || c.points > 0),
-      solves: detailedSolves,
+      categoryBreakdown: Array.from(catStats.values()),
+      solves: formattedSolves,
     });
   } catch (error: any) {
     console.error('Profile error:', error);

@@ -14,10 +14,12 @@ interface Category {
 export default function NewChallengePage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [availableChallenges, setAvailableChallenges] = useState<{ id: string; title: string; categoryName?: string }[]>([]);
   const [loadingCats, setLoadingCats] = useState(true);
 
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [prerequisiteId, setPrerequisiteId] = useState('');
   const [flag, setFlag] = useState('');
   const [maxPoints, setMaxPoints] = useState(500);
   const [minPoints, setMinPoints] = useState(100);
@@ -31,13 +33,16 @@ export default function NewChallengePage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch('/api/admin/categories')
-      .then((res) => res.json())
-      .then((data) => {
-        setCategories(data.categories || []);
-        if (data.categories?.length > 0) {
-          setCategoryId(data.categories[0].id);
+    Promise.all([
+      fetch('/api/admin/categories').then((r) => r.json()),
+      fetch('/api/admin/challenges').then((r) => r.json()),
+    ])
+      .then(([catData, chData]) => {
+        setCategories(catData.categories || []);
+        if (catData.categories?.length > 0) {
+          setCategoryId(catData.categories[0].id);
         }
+        setAvailableChallenges(chData.challenges || []);
         setLoadingCats(false);
       })
       .catch(() => setLoadingCats(false));
@@ -62,6 +67,7 @@ export default function NewChallengePage() {
           decayFactor,
           status,
           attachmentUrl: attachmentUrl || null,
+          prerequisiteId: prerequisiteId ? prerequisiteId : null,
         }),
       });
 
@@ -138,6 +144,27 @@ export default function NewChallengePage() {
                 ))}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono-code text-gray-400 mb-1.5 uppercase">
+              Prerequisite Challenge (Optional)
+            </label>
+            <select
+              value={prerequisiteId}
+              onChange={(e) => setPrerequisiteId(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded bg-[#13241d] border border-[#1a3026] text-sm text-white focus:outline-none focus:border-[#00ff41] font-mono-code"
+            >
+              <option value="">(None - Visible immediately)</option>
+              {availableChallenges.map((ac) => (
+                <option key={ac.id} value={ac.id}>
+                  {ac.title} {ac.categoryName ? `(${ac.categoryName})` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-gray-500 font-mono-code mt-1">
+              If selected, this challenge will stay hidden from players until they solve the prerequisite challenge.
+            </p>
           </div>
 
           <div>

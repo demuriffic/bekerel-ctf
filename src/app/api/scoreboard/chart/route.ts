@@ -1,34 +1,51 @@
 import { NextResponse } from 'next/server';
 import { db, users, solves } from '@/db';
-import { eq, and, asc } from 'drizzle-orm';
+import { eq, and, asc, inArray, sql } from 'drizzle-orm';
 import { initDb } from '@/db/migrate';
 
 export async function GET() {
   try {
     await initDb();
 
-    // Fetch non-banned competitors and solves in parallel
-    const [allUsers, allSolves] = await Promise.all([
-      db
-        .select()
-        .from(users)
-        .where(and(eq(users.banned, false), eq(users.role, 'player'))),
-      db.select().from(solves).orderBy(asc(solves.solvedAt)),
-    ]);
+    // Query top 10 players directly in SQL
+    const topUsers = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        score: sql<number>`coalesce(sum(${solves.pointsAwarded}), 0)::int`,
+      })
+      .from(users)
+      .leftJoin(solves, eq(solves.userId, users.id))
+      .where(and(eq(users.banned, false), eq(users.role, 'player')))
+      .groupBy(users.id, users.username)
+      .orderBy(sql`coalesce(sum(${solves.pointsAwarded}), 0) DESC`, users.username)
+      .limit(10);
 
-    // Calculate total scores to find top 10
-    const userScores = new Map<string, number>();
-    for (const s of allSolves) {
-      userScores.set(s.userId, (userScores.get(s.userId) || 0) + s.pointsAwarded);
+    if (topUsers.length === 0) {
+      return NextResponse.json(
+        { players: [], chartData: [] },
+        {
+          headers: {
+            'Cache-Control': 'public, s-maxage=3, stale-while-revalidate=15',
+          },
+        }
+      );
     }
 
-    const topUsers = allUsers
-      .map((u) => ({ id: u.id, username: u.username, score: userScores.get(u.id) || 0 }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
-
-    const topUserIds = new Set(topUsers.map((u) => u.id));
+    const topUserIds = topUsers.map((u) => u.id);
     const topUsernames = topUsers.map((u) => u.username);
+    const userMap = new Map(topUsers.map((u) => [u.id, u.username]));
+
+    // Query solves only for the top 10 users
+    const relevantSolves = await db
+      .select({
+        userId: solves.userId,
+        pointsAwarded: solves.pointsAwarded,
+        solvedAt: solves.solvedAt,
+      })
+      .from(solves)
+      .where(inArray(solves.userId, topUserIds))
+      .orderBy(asc(solves.solvedAt));
 
     // Build timeline data points
     const runningScores = new Map<string, number>();
@@ -37,10 +54,6 @@ export async function GET() {
     }
 
     const chartData: any[] = [];
-
-    // Filter solves to top 10
-    const relevantSolves = allSolves.filter((s) => topUserIds.has(s.userId));
-    const userMap = new Map(topUsers.map((u) => [u.id, u.username]));
 
     for (const s of relevantSolves) {
       const username = userMap.get(s.userId);

@@ -96,6 +96,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'This challenge is not currently available' }, { status: 404 });
     }
 
+    // Check prerequisite access
+    if (challenge.prerequisiteId && session.role !== 'admin') {
+      const [prereqSolve] = await db
+        .select({ id: solves.id })
+        .from(solves)
+        .where(and(eq(solves.userId, session.id), eq(solves.challengeId, challenge.prerequisiteId)))
+        .limit(1);
+
+      if (!prereqSolve) {
+        return NextResponse.json(
+          { error: 'This challenge is locked because its prerequisite has not been solved.' },
+          { status: 403 }
+        );
+      }
+    }
+
     // Check if user already solved it
     const [existingSolve] = await db
       .select()
@@ -163,11 +179,18 @@ export async function POST(req: Request) {
       throw insertError;
     }
 
+    // Find any published challenges newly unlocked by solving this prerequisite
+    const unlockedChallenges = await db
+      .select({ id: challenges.id, title: challenges.title })
+      .from(challenges)
+      .where(and(eq(challenges.prerequisiteId, challenge.id), eq(challenges.status, 'published')));
+
     return NextResponse.json({
       success: true,
       message: `🎉 Correct flag! You solved "${challenge.title}" and earned ${pointsAwarded} points!`,
       pointsAwarded,
       isFirstBlood: currentSolveCount === 0,
+      unlockedChallenges,
     });
   } catch (error: any) {
     console.error('Submission error:', error);

@@ -3,6 +3,7 @@ import { db, challenges } from '@/db';
 import { eq } from 'drizzle-orm';
 import { requireAdmin } from '@/lib/auth';
 import { initDb } from '@/db/migrate';
+import { hasPrerequisiteCycle } from '@/lib/prerequisites';
 
 export async function GET(
   req: Request,
@@ -21,7 +22,17 @@ export async function GET(
       return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ challenge });
+    let prerequisiteTitle: string | null = null;
+    if (challenge.prerequisiteId) {
+      const [prereq] = await db
+        .select({ title: challenges.title })
+        .from(challenges)
+        .where(eq(challenges.id, challenge.prerequisiteId))
+        .limit(1);
+      prerequisiteTitle = prereq?.title || null;
+    }
+
+    return NextResponse.json({ challenge: { ...challenge, prerequisiteTitle } });
   } catch (error: any) {
     console.error('Admin get challenge error:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
@@ -51,6 +62,7 @@ export async function PUT(
       decayFactor,
       status,
       attachmentUrl,
+      prerequisiteId,
     } = body;
 
     if (maxPoints !== undefined && minPoints !== undefined) {
@@ -78,6 +90,46 @@ export async function PUT(
       );
     }
 
+    let finalPrereqId: string | null | undefined = undefined;
+    if (prerequisiteId !== undefined) {
+      const cleanPrereqId =
+        prerequisiteId && typeof prerequisiteId === 'string' && prerequisiteId.trim() !== ''
+          ? prerequisiteId.trim()
+          : null;
+
+      if (cleanPrereqId === id) {
+        return NextResponse.json(
+          { error: 'A challenge cannot require itself as a prerequisite' },
+          { status: 400 }
+        );
+      }
+
+      if (cleanPrereqId) {
+        const [prereqChal] = await db
+          .select()
+          .from(challenges)
+          .where(eq(challenges.id, cleanPrereqId))
+          .limit(1);
+
+        if (!prereqChal) {
+          return NextResponse.json(
+            { error: 'Selected prerequisite challenge does not exist' },
+            { status: 400 }
+          );
+        }
+
+        const isCycle = await hasPrerequisiteCycle(id, cleanPrereqId);
+        if (isCycle) {
+          return NextResponse.json(
+            { error: 'Circular prerequisite dependency detected (a prerequisite cycle would be created)' },
+            { status: 400 }
+          );
+        }
+      }
+
+      finalPrereqId = cleanPrereqId;
+    }
+
     const [updated] = await db
       .update(challenges)
       .set({
@@ -90,6 +142,7 @@ export async function PUT(
         ...(decayFactor !== undefined && { decayFactor: Number(decayFactor) }),
         ...(status !== undefined && { status: status === 'published' ? 'published' : 'draft' }),
         ...(attachmentUrl !== undefined && { attachmentUrl: attachmentUrl ? attachmentUrl.trim() : null }),
+        ...(finalPrereqId !== undefined && { prerequisiteId: finalPrereqId }),
         updatedAt: new Date(),
       })
       .where(eq(challenges.id, id))

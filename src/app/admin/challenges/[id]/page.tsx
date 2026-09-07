@@ -20,10 +20,12 @@ export default function EditChallengePage({
   const router = useRouter();
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [availableChallenges, setAvailableChallenges] = useState<{ id: string; title: string; categoryName?: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [prerequisiteId, setPrerequisiteId] = useState('');
   const [flag, setFlag] = useState('');
   const [maxPoints, setMaxPoints] = useState(500);
   const [minPoints, setMinPoints] = useState(100);
@@ -41,13 +43,15 @@ export default function EditChallengePage({
     Promise.all([
       fetch('/api/admin/categories').then((r) => r.json()),
       fetch(`/api/admin/challenges/${id}`).then((r) => r.json()),
+      fetch('/api/admin/challenges').then((r) => r.json()),
     ])
-      .then(([catData, chData]) => {
+      .then(([catData, chData, allChData]) => {
         setCategories(catData.categories || []);
         const ch = chData.challenge;
         if (ch) {
           setTitle(ch.title);
           setCategoryId(ch.categoryId);
+          setPrerequisiteId(ch.prerequisiteId || '');
           setFlag(ch.flag);
           setMaxPoints(ch.maxPoints);
           setMinPoints(ch.minPoints);
@@ -56,6 +60,9 @@ export default function EditChallengePage({
           setAttachmentUrl(ch.attachmentUrl || '');
           setDescription(ch.description);
         }
+        // Exclude the current challenge from the candidate prerequisites list
+        const others = (allChData.challenges || []).filter((c: any) => c.id !== id);
+        setAvailableChallenges(others);
         setLoading(false);
       })
       .catch((err) => {
@@ -84,6 +91,7 @@ export default function EditChallengePage({
           decayFactor,
           status,
           attachmentUrl: attachmentUrl || null,
+          prerequisiteId: prerequisiteId ? prerequisiteId : null,
         }),
       });
 
@@ -203,6 +211,27 @@ export default function EditChallengePage({
                 ))}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono-code text-gray-400 mb-1.5 uppercase">
+              Prerequisite Challenge (Optional)
+            </label>
+            <select
+              value={prerequisiteId}
+              onChange={(e) => setPrerequisiteId(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded bg-[#13241d] border border-[#1a3026] text-sm text-white focus:outline-none focus:border-[#00ff41] font-mono-code"
+            >
+              <option value="">(None - Visible immediately)</option>
+              {availableChallenges.map((ac) => (
+                <option key={ac.id} value={ac.id}>
+                  {ac.title} {ac.categoryName ? `(${ac.categoryName})` : ''}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-gray-500 font-mono-code mt-1">
+              If selected, players will not see this challenge until they solve the prerequisite challenge first.
+            </p>
           </div>
 
           <div>

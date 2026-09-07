@@ -37,6 +37,8 @@ export async function GET() {
 
     const totalUsers = allUsers.filter((u) => !u.banned).length;
 
+    const challengeTitleMap = new Map(allChallenges.map((c) => [c.id, c.title]));
+
     const data = allChallenges.map((c) => {
       const category = categoryMap.get(c.categoryId);
       const count = solveCounts.get(c.id) || 0;
@@ -52,6 +54,8 @@ export async function GET() {
         currentPoints,
         firstBlood: fb,
         solveRate,
+        prerequisiteId: c.prerequisiteId,
+        prerequisiteTitle: c.prerequisiteId ? challengeTitleMap.get(c.prerequisiteId) || 'Unknown' : null,
         createdAt: c.createdAt.toISOString(),
         updatedAt: c.updatedAt.toISOString(),
       };
@@ -83,6 +87,7 @@ export async function POST(req: Request) {
       decayFactor = 50,
       status = 'draft',
       attachmentUrl,
+      prerequisiteId,
     } = body;
 
     if (!title || !description || !flag || !categoryId) {
@@ -90,6 +95,16 @@ export async function POST(req: Request) {
         { error: 'Title, description, flag, and category are required' },
         { status: 400 }
       );
+    }
+
+    if (prerequisiteId) {
+      const [prereqChal] = await db.select().from(challenges).where(eq(challenges.id, prerequisiteId)).limit(1);
+      if (!prereqChal) {
+        return NextResponse.json(
+          { error: 'Selected prerequisite challenge not found' },
+          { status: 400 }
+        );
+      }
     }
 
     const numMax = Number(maxPoints);
@@ -136,6 +151,7 @@ export async function POST(req: Request) {
         decayFactor: Number(decayFactor),
         status: status === 'published' ? 'published' : 'draft',
         attachmentUrl: attachmentUrl ? attachmentUrl.trim() : null,
+        prerequisiteId: prerequisiteId ? prerequisiteId : null,
       })
       .returning();
 

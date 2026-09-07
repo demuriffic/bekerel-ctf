@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db, challenges, categories, solves } from '@/db';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, sql } from 'drizzle-orm';
 import { getSession } from '@/lib/auth';
 import { calculateDynamicPoints } from '@/lib/scoring';
 import { getCtfStatus } from '@/lib/ctf';
@@ -14,12 +14,24 @@ export async function GET() {
     const session = await getSession();
     const isAdmin = Boolean(session && session.role === 'admin');
 
-    // Fetch CTF status, categories, challenges, and solves in parallel
-    const [ctfStatus, allCategories, allChallenges, allSolves] = await Promise.all([
+    // Fetch CTF status, categories, challenges, solve counts, and user's solves
+    const [ctfStatus, allCategories, allChallenges, solveCounts, userSolveRows] = await Promise.all([
       getCtfStatus(),
       db.select().from(categories).orderBy(asc(categories.order)),
       db.select().from(challenges),
-      db.select().from(solves),
+      db
+        .select({
+          challengeId: solves.challengeId,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(solves)
+        .groupBy(solves.challengeId),
+      session
+        ? db
+            .select({ challengeId: solves.challengeId })
+            .from(solves)
+            .where(eq(solves.userId, session.id))
+        : Promise.resolve([]),
     ]);
 
     // If CTF is paused and user is not admin, completely block challenge visibility
@@ -40,19 +52,31 @@ export async function GET() {
       );
     }
 
-    const visibleChallenges = allChallenges.filter(
-      (c) => c.status === 'published' || isAdmin
-    );
-
     const solvesByChallenge = new Map<string, number>();
-    const userSolves = new Set<string>();
-
-    for (const s of allSolves) {
-      solvesByChallenge.set(s.challengeId, (solvesByChallenge.get(s.challengeId) || 0) + 1);
-      if (session && s.userId === session.id) {
-        userSolves.add(s.challengeId);
-      }
+    for (const sc of solveCounts) {
+      solvesByChallenge.set(sc.challengeId, sc.count);
     }
+
+    const userSolves = new Set<string>();
+    for (const us of userSolveRows) {
+      userSolves.add(us.challengeId);
+    }
+
+    const challengeTitleMap = new Map<string, string>();
+    for (const c of allChallenges) {
+      challengeTitleMap.set(c.id, c.title);
+    }
+
+    // Filter by published status and prerequisite completion
+    // Non-admins only see challenges if prerequisite is solved (or no prerequisite)
+    const visibleChallenges = allChallenges.filter((c) => {
+      if (isAdmin) return true;
+      if (c.status !== 'published') return false;
+      if (c.prerequisiteId && !userSolves.has(c.prerequisiteId)) {
+        return false;
+      }
+      return true;
+    });
 
     const formattedChallenges = visibleChallenges.map((c) => {
       const solveCount = solvesByChallenge.get(c.id) || 0;
@@ -71,6 +95,8 @@ export async function GET() {
         solveCount,
         status: c.status,
         attachmentUrl: c.attachmentUrl,
+        prerequisiteId: c.prerequisiteId,
+        prerequisiteTitle: c.prerequisiteId ? challengeTitleMap.get(c.prerequisiteId) || 'Unknown' : null,
         isSolved,
       };
     });

@@ -12,6 +12,7 @@ import {
   Flame,
   CheckCircle2,
   ExternalLink,
+  Lock,
 } from 'lucide-react';
 
 interface ChallengeAdminItem {
@@ -27,6 +28,8 @@ interface ChallengeAdminItem {
   solveCount: number;
   solveRate: number;
   firstBlood: { username: string; solvedAt: string } | null;
+  prerequisiteId?: string | null;
+  prerequisiteTitle?: string | null;
   status: 'draft' | 'published';
 }
 
@@ -107,6 +110,7 @@ export default function AdminChallengesPage() {
               <tr>
                 <th className="py-3 px-4">Challenge</th>
                 <th className="py-3 px-4">Category</th>
+                <th className="py-3 px-4">Prerequisite</th>
                 <th className="py-3 px-4">Status</th>
                 <th className="py-3 px-4">Points</th>
                 <th className="py-3 px-4">Solves & Rate</th>
@@ -118,13 +122,13 @@ export default function AdminChallengesPage() {
             <tbody className="divide-y divide-[#1a3026]">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-500">
+                  <td colSpan={9} className="py-12 text-center text-gray-500">
                     Loading challenges...
                   </td>
                 </tr>
               ) : challenges.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-500">
+                  <td colSpan={9} className="py-12 text-center text-gray-500">
                     No challenges found
                   </td>
                 </tr>
@@ -148,6 +152,16 @@ export default function AdminChallengesPage() {
                       >
                         {ch.categoryName}
                       </span>
+                    </td>
+                    <td className="py-3 px-4 text-xs">
+                      {ch.prerequisiteTitle ? (
+                        <span className="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 font-mono-code text-[11px] inline-flex items-center gap-1 max-w-[150px] truncate">
+                          <Lock className="w-3 h-3 text-cyan-400 shrink-0" />
+                          <span className="truncate">{ch.prerequisiteTitle}</span>
+                        </span>
+                      ) : (
+                        <span className="text-gray-600">—</span>
+                      )}
                     </td>
                     <td className="py-3 px-4">
                       <span

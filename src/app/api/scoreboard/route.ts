@@ -1,73 +1,39 @@
 import { NextResponse } from 'next/server';
 import { db, users, solves } from '@/db';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { initDb } from '@/db/migrate';
 
 export async function GET() {
   try {
     await initDb();
 
-    // Get non-banned competitors and all solves in parallel
-    const [allUsers, allSolves] = await Promise.all([
-      db
-        .select()
-        .from(users)
-        .where(and(eq(users.banned, false), eq(users.role, 'player'))),
-      db.select().from(solves),
-    ]);
-
-    // Group solves by user
-    const userStats = new Map<
-      string,
-      {
-        id: string;
-        username: string;
-        score: number;
-        solvesCount: number;
-        lastSolveAt: Date | null;
-      }
-    >();
-
-    for (const u of allUsers) {
-      userStats.set(u.id, {
-        id: u.id,
-        username: u.username,
-        score: 0,
-        solvesCount: 0,
-        lastSolveAt: null,
-      });
-    }
-
-    for (const s of allSolves) {
-      const stats = userStats.get(s.userId);
-      if (stats) {
-        stats.score += s.pointsAwarded;
-        stats.solvesCount += 1;
-        const solveDate = new Date(s.solvedAt);
-        if (!stats.lastSolveAt || solveDate > stats.lastSolveAt) {
-          stats.lastSolveAt = solveDate;
-        }
-      }
-    }
-
-    // Sort by score desc, then by lastSolveAt asc (earlier solve is better), then username
-    const leaderboard = Array.from(userStats.values())
-      .sort((a, b) => {
-        if (b.score !== a.score) {
-          return b.score - a.score;
-        }
-        if (a.lastSolveAt && b.lastSolveAt) {
-          return a.lastSolveAt.getTime() - b.lastSolveAt.getTime();
-        }
-        if (a.lastSolveAt && !b.lastSolveAt) return -1;
-        if (!a.lastSolveAt && b.lastSolveAt) return 1;
-        return a.username.localeCompare(b.username);
+    // Query leaderboard via SQL aggregation instead of loading all solves in memory
+    const leaderboardRows = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        score: sql<number>`coalesce(sum(${solves.pointsAwarded}), 0)::int`,
+        solvesCount: sql<number>`count(${solves.id})::int`,
+        lastSolveAt: sql<string | null>`max(${solves.solvedAt})`,
       })
-      .map((entry, index) => ({
-        rank: index + 1,
-        ...entry,
-        lastSolveAt: entry.lastSolveAt ? entry.lastSolveAt.toISOString() : null,
-      }));
+      .from(users)
+      .leftJoin(solves, eq(solves.userId, users.id))
+      .where(and(eq(users.banned, false), eq(users.role, 'player')))
+      .groupBy(users.id, users.username)
+      .orderBy(
+        sql`coalesce(sum(${solves.pointsAwarded}), 0) DESC`,
+        sql`max(${solves.solvedAt}) ASC NULLS LAST`,
+        users.username
+      );
+
+    const leaderboard = leaderboardRows.map((entry, index) => ({
+      rank: index + 1,
+      id: entry.id,
+      username: entry.username,
+      score: entry.score,
+      solvesCount: entry.solvesCount,
+      lastSolveAt: entry.lastSolveAt ? new Date(entry.lastSolveAt).toISOString() : null,
+    }));
 
     return NextResponse.json(
       { leaderboard },

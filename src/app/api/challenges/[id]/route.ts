@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db, challenges, categories, solves } from '@/db';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { getSession } from '@/lib/auth';
 import { getCtfStatus } from '@/lib/ctf';
 import { calculateDynamicPoints } from '@/lib/scoring';
@@ -44,9 +44,28 @@ export async function GET(
       return NextResponse.json({ error: 'Challenge not available' }, { status: 404 });
     }
 
-    const [category, challengeSolves, userSolve] = await Promise.all([
+    // Prerequisite check: Hidden unless user solved prerequisite (admins bypass)
+    if (challenge.prerequisiteId && !isAdmin) {
+      if (!session) {
+        return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
+      }
+      const [prereqSolve] = await db
+        .select({ id: solves.id })
+        .from(solves)
+        .where(and(eq(solves.userId, session.id), eq(solves.challengeId, challenge.prerequisiteId)))
+        .limit(1);
+
+      if (!prereqSolve) {
+        return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
+      }
+    }
+
+    const [category, [solveCountRow], userSolve] = await Promise.all([
       db.select().from(categories).where(eq(categories.id, challenge.categoryId)).limit(1).then((r) => r[0]),
-      db.select().from(solves).where(eq(solves.challengeId, challenge.id)),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(solves)
+        .where(eq(solves.challengeId, challenge.id)),
       session
         ? db
             .select()
@@ -57,7 +76,7 @@ export async function GET(
         : Promise.resolve(null),
     ]);
 
-    const solveCount = challengeSolves.length;
+    const solveCount = solveCountRow?.count || 0;
     const currentPoints = calculateDynamicPoints(
       challenge.maxPoints,
       challenge.minPoints,
